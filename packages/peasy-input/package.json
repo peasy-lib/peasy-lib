@@ -1,0 +1,56 @@
+{
+  "name": "@peasy-lib/peasy-input",
+  "version": "0.2.0",
+  "main": "dist/index.js",
+  "module": "dist/esm/index.mjs",
+  "exports": {
+    "require": "./dist/cjs/index.cjs",
+    "import": "./dist/esm/index.mjs"
+  },
+  "typings": "dist/types/index.d.ts",
+  "license": "UNLICENSED",
+  "description": "An easy peasy input library.",
+  "author": "Jürgen Wenzel",
+  "homepage": "https://github.com/peasy-lib/peasy-input#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/peasy-lib/peasy-input"
+  },
+  "bugs": {
+    "url": "https://github.com/peasy-lib/peasy-input/issues"
+  },
+  "files": [
+    "dist/**/*.cjs",
+    "dist/**/*.dev.cjs.map",
+    "dist/**/*.mjs",
+    "dist/**/*.dev.mjs.map",
+    "dist/**/*.d.ts",
+    "src/**/*.ts",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "lint": "eslint --cache --ext .js,.ts src/",
+    "lint:ci": "eslint --cache --ext .js,.ts --quiet --report-unused-disable-directives src/",
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "publish:dev": "npm publish --tag dev",
+    "publish:latest": "npm publish --tag latest",
+    "rollup": "rollup -c",
+    "postrollup": "tsc --emitDeclarationOnly",
+    "build:packages": "npm run rollup"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "typescript": "^4.6.3"
+  },
+  "engines": {
+    "node": ">=14.17.0"
+  }
+}

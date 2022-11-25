@@ -5,8 +5,11 @@
   "workspaces": [
     "packages/peasy-ui",
     "packages/peasy-lighting",
+    "packages/peasy-input",
+
     "examples/ui-demo",
-    "examples/lighting-demo"
+    "examples/lighting-demo",
+    "examples/input-demo"
   ],
   "license": "UNLICENSED",
   "engines": {

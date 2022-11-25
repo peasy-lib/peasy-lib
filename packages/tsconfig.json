@@ -2,6 +2,7 @@
   "files": ["./global.d.ts"],
   "references": [
     { "path": "peasy-ui" },
-    { "path": "peasy-lighting" }
+    { "path": "peasy-lighting" },
+    { "path": "peasy-input" }
   ]
 }

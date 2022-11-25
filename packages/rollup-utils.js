@@ -136,6 +136,7 @@ export function getRollupConfig(pkg, configure = identity, configureTerser, post
   };
   // @ts-ignore
   const isDevMode = /^true$/.test(process.env.DEV_MODE);
+  console.log('DEV_MODE', isDevMode);
   const inputFile = 'src/index.ts';
   const esmDevDist = 'dist/esm/index.dev.mjs';
   const cjsDevDist = 'dist/cjs/index.dev.cjs';

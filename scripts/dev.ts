@@ -39,6 +39,7 @@ const e2e = args.e2e;
 // const validE2e = [
 //   'peasy-ui',
 //   'peasy-lighting',
+//   'peasy-input',
 // ];
 // const hasValidE2e = e2e?.length && e2e.every(e => validE2e.includes(e));
 
@@ -55,6 +56,7 @@ const buildCmd = 'npm run build';
 const validPackages = [
   'peasy-ui',
   'peasy-lighting',
+  'peasy-input',
 ];
 
 const devPackages = (args.d ?? []) as string[];
@@ -83,6 +85,7 @@ const apps = (args.a ?? []) as string[];
 const validApps = [
   'ui-demo',
   'lighting-demo',
+  'input-demo',
 ];
 
 if (apps.length > 0) {
