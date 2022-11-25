@@ -1,0 +1,27 @@
+<template id="timer">
+  <div style="background-color: ${color};">${greeting} (Been running for ${timer} seconds.)</div>
+</template>
+
+
+<script type="module">
+  // One or more scripts, in separate files even, can then use UI
+  // import { UI } from 'peasy-ui';
+
+  function getTemplate(name) {
+    console.log(document.querySelector(name));
+    return document.querySelector(name).innerHTML;
+  }
+
+  console.log('In object');
+  debugger;
+
+  setTimeout(() => {
+    const template = getTemplate('#timer'); // '<div>${greeting} (Been running for ${timer} seconds.)</div>';
+    const model = { greeting: 'Hello, World!', timer: -1, color: 'red' };
+//    UI.create(window.parent.document.body, template, model);
+
+    setInterval(() => {
+      model.timer++;
+    }, 1000);
+  }, 500);
+</script>

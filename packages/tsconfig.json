@@ -1,0 +1,7 @@
+{
+  "files": ["./global.d.ts"],
+  "references": [
+    { "path": "peasy-ui" },
+    { "path": "peasy-lighting" }
+  ]
+}

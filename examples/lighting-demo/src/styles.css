@@ -1,0 +1,68 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+input {
+  padding: 3px;
+  border-radius: 3px;
+}
+
+.main {
+  margin: 10px;
+  padding: 10px;
+  background-color: var(--color);
+  image-rendering: pixelated;
+  /* display: flex;
+  width: 100vw;
+  height: 100vh;
+  justify-content: center;
+  align-items: center; */
+}
+
+.border {
+  display: inline-block;
+  position: relative;
+  margin: 10px;
+  width: 600px;
+  height: 400px;
+  /* border: 2px solid black; */
+  box-sizing: content-box;
+}
+
+.viewport {
+  overflow: hidden;
+}
+
+.static-ship,
+.ship,
+.ship2 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 64px;
+  height: 64px;
+  background-image: url(../assets/mookie-ship.png);
+}
+
+.static-ship {
+  left: 300px;
+  top: 100px;
+}
+
+.asteroid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 128px;
+  height: 128px;
+  background-image: url(../assets/asteroid.png);
+}
+
+.screenshot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 600px;
+  height: 400px;
+  ;
+}

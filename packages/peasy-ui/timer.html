@@ -1,0 +1,64 @@
+<template id="timer">
+  <div>
+    Hello!
+    <div style="background-color: ${color}">${greeting} (Been running for ${timer} seconds.)</div>
+  </div>
+</template>
+
+
+<script type="module">
+  export const MODULE = 'timer';
+  
+  console.log('Importing GlobalUI', 'module');
+  import { GlobalUI } from './global-ui.js';
+  GlobalUI.items.push('module');
+  console.log('GlobalUI items', GlobalUI.items);
+
+  console.log('module UI running', window.UITest, window.parent.UITest);
+  //setTimeout(() => {
+    window.UI = window.top.UI ?? UI;
+    if (!UI.test) {
+      UI.test = [];
+    }
+    UI.test.push('module');
+    console.log('module UI', window.UI.test, UI, window.UI);
+
+    // One or more scripts, in separate files even, can then use UI
+    // import { UI } from "https://cdn.skypack.dev/peasy-ui";
+
+    function getTemplate(name) {
+      console.log(document.querySelector(name));
+      return document.querySelector(name).innerHTML;
+    }
+
+    function findObject() {
+      if (window === window.parent) {
+        return null;
+      }
+
+      const objects = window.parent.document.querySelectorAll('object');
+      for (const obj of objects) {
+        if (obj.contentDocument === document) {
+          return obj;
+        }
+      }
+      return null;
+    }
+
+    console.log('In object');
+
+    setTimeout(() => {
+      const obj = findObject();
+      console.log('findObject', obj);
+
+      const template = getTemplate('#timer'); // '<div>${greeting} (Been running for ${timer} seconds.)</div>';
+      const model = { greeting: 'Hello, World!', timer: -1, color: 'gold' };
+      UI.create(obj.parentElement, template, model);
+
+      setInterval(() => {
+        model.timer++;
+        UI.update();
+      }, 1000);
+    }, 500);
+  //}, 150);
+</script>

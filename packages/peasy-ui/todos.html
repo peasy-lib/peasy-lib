@@ -1,0 +1,94 @@
+<html>
+
+<head>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    .todo.pui-adding,
+    .todo.pui-removing {
+      opacity: 0;
+    }
+
+    .todo.pui-removing {
+      transition: opacity 300ms ease-in-out;
+    }
+
+    .todos {
+      margin: 10px;
+    }
+
+    .todos .input {
+      margin-bottom: 10px;
+    }
+
+    .todo {
+      padding: 5px 0px;
+      transition: opacity 1s ease-in-out;
+      /* Needs to be here for adding animation */
+    }
+
+    .done-todo {
+      text-decoration: line-through;
+    }
+
+    .todo button {
+      float: right;
+      margin-right: 1vw;
+    }
+
+    .todos .header {
+      margin-top: 10px;
+      margin-left: 3px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <script type="module">
+    import { UI } from "https://cdn.skypack.dev/peasy-ui";
+
+    const template = `
+      <div class="todos">
+        <h2>Todo list</h2>
+        <div class="input"><input \${value <=> todo} \${==> inputElement}> <button \${click @=> addTodo}>Add todo</button></div>
+        <div class="header" \${ === hasRemaining}>Remaining</div>
+        <div class="todo remaining-todo" \${todo <=* remainingTodos} style="background-color: \${color};"><label><input type="checkbox" \${checked <=> todo.done}> \${todo.text}</label> <button \${click @=> removeTodo}>Remove todo</button></div>
+        <div class="header" \${ === hasDone}>Done</div>
+        <div class="todo done-todo" \${todo <=* doneTodos} style="background-color: \${color};"><label><input type="checkbox" \${checked <=> todo.done}> \${todo.text}</label> <button \${click @=> removeTodo}>Remove todo</button></div>
+      </div>
+    `;
+    const model = {
+      color: 'gold',
+      todos: JSON.parse(localStorage.getItem('todos') ?? '[]'),
+      get remainingTodos() { return model.todos.filter(todo => !todo.done) },
+      get doneTodos() { return model.todos.filter(todo => todo.done) },
+      get hasRemaining() { return model.remainingTodos.length > 0; },
+      get hasDone() { return model.doneTodos.length > 0; },
+      addTodo: (_event, model) => {
+        model.todos.push({ text: model.todo, done: false });
+        localStorage.setItem('todos', JSON.stringify(model.todos));
+        model.todo = '';
+        model.inputElement.focus();
+      },
+      removeTodo: (_event, model, _element, _at, context) => {
+        const parentModel = context.$parent.$model;
+        parentModel.todos = parentModel.todos.filter(todo => todo !== model.todo);
+        localStorage.setItem('todos', JSON.stringify(parentModel.todos));
+      },
+    };
+    UI.create(document.body, template, model);
+
+    function updateUI() {
+      UI.update();
+      requestAnimationFrame(updateUI);
+    }
+    updateUI();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "pretty": true,
+    "lib": ["esnext"],
+    "target": "ES2020",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "importHelpers": false,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": false,
+    "rootDir": ".",
+
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true,
+    "noEmitOnError": true,
+    "skipLibCheck": true,
+    "preserveConstEnums": true,
+    "stripInternal": true,
+
+    "strict": true,
+
+    "types": []
+  },
+  "files": ["./global.d.ts"]
+}

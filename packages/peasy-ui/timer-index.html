@@ -1,0 +1,87 @@
+<html>
+
+<head>
+  <!-- <script src="global-item.js"></script> -->
+
+  <script type="module">
+    // This script runs peasy-ui updates
+    import { UI } from "https://cdn.skypack.dev/peasy-ui";
+    console.log('Importing GlobalUI', 'top');
+    import { GlobalUI } from './global-ui.js';
+    GlobalUI.items.push('top');
+    console.log('GlobalUI items', GlobalUI.items);
+
+    // import { MODULE } from './timer.html';
+    // console.log('Module', MODULE);
+    
+    function updateUI() {
+      console.log('Updating UI');
+      UI.update();
+      requestAnimationFrame(updateUI);
+    }
+    updateUI();
+
+    window.UI = window.top.UI ?? UI;
+    if (!UI.test) {
+      UI.test = [];
+    }
+    UI.test.push('main');
+    console.log('main UI', window.UI.test, UI, window.UI);
+/*    if (window === window.top) {
+      window.UI = UI;
+    } else {
+      window.UI = window.top.UI;
+    }
+*/
+    function getTemplate(name) {
+      console.log(document.querySelector(name));
+      debugger;
+    }
+  </script>
+
+</head>
+
+<body style="background-color: blue;">
+  Object:
+  <object data="timer.html"></object>
+  <!-- <embed src="timer.html"></embed> -->
+  <!-- <iframe src="timer.html"></iframe> -->
+  Object2:
+  <object data="timer.html"></object>
+
+  <script type="module">
+    // One or more scripts, in separate files even, can then use UI
+    //    import { UI } from "https://cdn.skypack.dev/peasy-ui";
+    console.log('Importing GlobalUI', 'second');
+    import { GlobalUI } from './global-ui.js';
+    GlobalUI.items.push('second');
+    console.log('GlobalUI items', GlobalUI.items);
+
+    window.UI = window.top.UI ?? UI;
+    if (!UI.test) {
+      UI.test = [];
+    }
+    UI.test.push('second');
+    console.log('second UI', window.UI.test, UI, window.UI);
+
+    function getTemplate(name) {
+      console.log(document.querySelector(name));
+      return document.querySelector(name).innerHTML;
+    }
+//    const html = /*html*/`
+//      <div>\${greeting} (Been running for \${timer} seconds.)</div>
+//    `;
+    /*
+        setTimeout(() => {
+          const template = getTemplate('#timer'); // '<div>${greeting} (Been running for ${timer} seconds.)</div>';
+          const model = { greeting: 'Hello, World!', timer: -1, color: 'red' };
+          UI.create(document.body, template, model);
+    
+          setInterval(() => {
+            model.timer++;
+          }, 1000);
+        }, 500); */
+  </script>
+</body>
+
+</html>
