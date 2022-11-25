@@ -40,6 +40,7 @@ const e2e = args.e2e;
 //   'peasy-ui',
 //   'peasy-lighting',
 //   'peasy-input',
+//   'peasy-physics',
 // ];
 // const hasValidE2e = e2e?.length && e2e.every(e => validE2e.includes(e));
 
@@ -57,6 +58,7 @@ const validPackages = [
   'peasy-ui',
   'peasy-lighting',
   'peasy-input',
+  'peasy-physics',
 ];
 
 const devPackages = (args.d ?? []) as string[];
@@ -86,6 +88,7 @@ const validApps = [
   'ui-demo',
   'lighting-demo',
   'input-demo',
+  'physics-demo',
 ];
 
 if (apps.length > 0) {

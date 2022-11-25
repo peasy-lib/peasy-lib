@@ -6,10 +6,12 @@
     "packages/peasy-ui",
     "packages/peasy-lighting",
     "packages/peasy-input",
+    "packages/peasy-physics",
 
     "examples/ui-demo",
     "examples/lighting-demo",
-    "examples/input-demo"
+    "examples/input-demo",
+    "examples/physics-demo"
   ],
   "license": "UNLICENSED",
   "engines": {

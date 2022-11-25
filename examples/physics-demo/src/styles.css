@@ -1,0 +1,28 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+.main {
+  margin: 10px;
+  padding: 10px;
+  background-color: var(--color);
+}
+
+.border {
+  display: inline-block;
+  position: relative;
+  margin: 10px;
+  width: 400px;
+  height: 400px;
+  border: 2px solid black;
+  box-sizing: content-box;
+}
+
+.ball {
+  display: inline-block;
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  will-change: transform;
+}
