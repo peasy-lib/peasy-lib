@@ -1,4 +1,6 @@
-export interface IVector extends Omit<Vector, 'z'> {
+export interface IVector {
+  x: number;
+  y: number;
   z?: number;
 }
 
