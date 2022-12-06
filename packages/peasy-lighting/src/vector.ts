@@ -163,7 +163,7 @@ export class Vector {
   public toArray(): number[] {
     return this instanceof Vector3
       ? [this.x, this.y, this.z]
-      : [this.x, this.y]
+      : [this.x, this.y];
   }
 
   public toString(): string {

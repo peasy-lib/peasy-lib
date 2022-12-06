@@ -88,7 +88,7 @@ export class Light {
     if (distance > this.#displayDistance) {
       this.#displayDistance = distance;
       this.#size = (max + this.#radius) * 2;
-      // console.log('radius', this.#radius, this.#viewport.size, this.#size, this.#displayDistance);
+
       this.#updated.add('size');
       this.#updated.add('position');
       this.updates.size++;
@@ -159,9 +159,7 @@ export class Light {
   }
 
   private constructor() {
-    // this.radius = 100;
     this.color = 'white';
-    // this.gradientSteps = ['white', 0.25, 'black', 0.8];
     this.gradientSteps = ['white', 0.25, 'black', 1];
   }
 
@@ -204,40 +202,6 @@ export class Light {
     });
   }
 
-  #createElements() {
-    this.#viewport.vail.insertAdjacentHTML('beforeend', `
-      <div class="color" style="
-        display: inline-block;
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        mix-blend-mode: screen;
-        background-color: ${this.color};
-      ">
-        <div class="container" style="
-          position: absolute;
-          left: 0px;
-          top: 0px;
-          width: 100%;
-          height: 100%;
-          mix-blend-mode: multiply;
-        ">
-          <div class="light" style="
-            display: inline-block;
-            position: absolute;
-            left: 0px;
-            top: 0px;
-            /* mix-blend-mode: screen; */
-          "></div>
-        </div>
-      </div>`);
-    this.#colorElement = this.#viewport.vail.lastElementChild as HTMLElement;
-    this.containerElement = this.#colorElement.firstElementChild as HTMLElement;
-    this.#lightElement = this.containerElement.firstElementChild as HTMLElement;
-  }
-
   #updateProperties(): void {
     for (const update of this.#updated) {
       // console.log('Updating light:', update);
@@ -278,5 +242,39 @@ export class Light {
       steps.push(`${color} ${typeof step === 'number' ? `${this.#radius * step}px` : step}`);
     }
     this.#gradient = steps.join(',');
+  }
+
+  #createElements() {
+    this.#viewport.vail.insertAdjacentHTML('beforeend', `
+      <div class="color" style="
+        display: inline-block;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        mix-blend-mode: screen;
+        background-color: ${this.color};
+      ">
+        <div class="container" style="
+          position: absolute;
+          left: 0px;
+          top: 0px;
+          width: 100%;
+          height: 100%;
+          mix-blend-mode: multiply;
+        ">
+          <div class="light" style="
+            display: inline-block;
+            position: absolute;
+            left: 0px;
+            top: 0px;
+            /* mix-blend-mode: screen; */
+          "></div>
+        </div>
+      </div>`);
+    this.#colorElement = this.#viewport.vail.lastElementChild as HTMLElement;
+    this.containerElement = this.#colorElement.firstElementChild as HTMLElement;
+    this.#lightElement = this.containerElement.firstElementChild as HTMLElement;
   }
 }

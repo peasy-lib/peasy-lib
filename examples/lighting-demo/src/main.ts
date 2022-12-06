@@ -1,5 +1,6 @@
-import { Lighting, Vector, Light } from '@peasy-lib/peasy-lighting';
+import { Lighting, Vector, Light, Viewport } from '@peasy-lib/peasy-lighting';
 import 'styles.css';
+import { Entity } from './entity';
 
 window.addEventListener('DOMContentLoaded', (event) => {
   main();
@@ -15,23 +16,62 @@ async function main(): Promise<void> {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="main">
       <div>Controlling: <span id="ship-color"></span></div>
-      <div class="viewport border" style="background-color: black;">
-      <div class="static-ship"></div>
-      <div class="ship"></div>
-      <div class="ship2"></div>
-      <div class="asteroid"></div>
+      <div class="viewport border" style="
+        /* background-color: black; */
+        background-image: url(/assets/spacebg.jpg);
+        image-rendering: pixelated;
+      ">
+        <div class="static-ship"></div>
+        <div class="ship"></div>
+        <div class="ship2"></div>
+        <div class="asteroid"></div>
+
+        <!--
+        <div class="peasy-lighting" style="
+          position: absolute;
+          top: 0px;
+          left: 0px;
+          width: 100%;
+          height: 100%;
+          mix-blend-mode: multiply;
+          image-rendering: pixelated;
+        ">
+          <div class="peasy-lighting-mask" style="
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            image-rendering: pixelated;
+          "></div>
+          <div class="peasy-lighting-vail" style="
+            display: inline-block;
+            position: absolute;
+            left: 0px;
+            top: 0px;
+            width: 100%;
+            height: 100%;
+            background-color: red;
+            /* background-image: url(/assets/spacebg.jpg); */
+            mix-blend-mode: screen;
+            image-rendering: pixelated;
+          "></div>
+        </div>
+        -->
       </div>
    </div>
   `);
 
-  // viewport = document.querySelector('.viewport') as HTMLElement;
-  viewport = document.querySelector('.viewport') as HTMLElement;
-  const rect = viewport.getBoundingClientRect();
+  viewport = Viewport.create({
+    element: document.querySelector('.viewport'),
+    useMask: true,
+  });
+  const rect = viewport.element.getBoundingClientRect();
   const viewportPosition = new Vector(rect.x, rect.y);
 
   let toggle = false;
   document.addEventListener('mousemove', (ev) => {
-    console.log(ev);
     if (!move) {
       return;
     }
@@ -87,76 +127,31 @@ async function main(): Promise<void> {
 
   let lightIndex = 0;
 
-  ship = {
-    element: document.querySelector('.ship') as HTMLElement,
-    position: new Vector(200, 200),
-    orientation: 0,
-    moveToPosition() {
-      ship.element.style.translate = `${ship.position.x - 32}px ${ship.position.y - 32}px`
-      ship.element.style.rotate = `${ship.orientation}deg`;
+  ship = new Entity({ x: 200, y: 200 }, { x: 64, y: 64 });
+  ship.element = document.querySelector('.ship');
 
-      ship.entity.position = ship.position;
-      ship.entity.orientation = ship.orientation;
-      ship.entity.zIndex = ship.zIndex ?? 0;
-    },
-    entity: undefined as any,
-  };
-  ship2 = {
-    element: document.querySelector('.ship2') as HTMLElement,
-    position: new Vector(400, 250),
-    orientation: 0,
-    zIndex: 1,
-    moveToPosition() {
-      ship2.element.style.translate = `${ship2.position.x - 32}px ${ship2.position.y - 32}px`
-      ship2.element.style.rotate = `${ship2.orientation}deg`;
+  ship2 = new Entity({ x: 400, y: 250 }, { x: 64, y: 64 }, 0, 1);
+  ship2.element = document.querySelector('.ship2');
 
-      ship2.entity.position = ship2.position;
-      ship2.entity.orientation = ship2.orientation;
-      ship2.entity.zIndex = ship2.zIndex ?? 0;
-    },
-    entity: undefined as any,
-  };
+  asteroid = new Entity({ x: 100, y: 100 }, { x: 128, y: 128 });
+  asteroid.element = document.querySelector('.asteroid');
 
-  asteroid = {
-    element: document.querySelector('.asteroid') as HTMLElement,
-    position: new Vector(100, 100),
-    orientation: 0,
-    moveToPosition() {
-      asteroid.element.style.translate = `${asteroid.position.x - 64}px ${asteroid.position.y - 64}px`
-      asteroid.element.style.rotate = `${asteroid.orientation}deg`;
-
-      asteroid.entity.position = asteroid.position;
-      asteroid.entity.orientation = asteroid.orientation;
-      asteroid.entity.zIndex = asteroid.zIndex ?? 0;
-    },
-    entity: undefined as any,
-  };
-
-  ship.entity = Lighting.addEntities([{
-    id: 'ship',
-    position: ship.position,
-    orientation: ship.orientation,
-    size: new Vector(64, 64),
+  Lighting.addEntities([{
+    entity: ship,
     normalMap: '/assets/mookie-ship-normal-map2.png',
-  }])[0];
+  }]);
   ship.moveToPosition();
 
-  ship2.entity = Lighting.addEntities([{
-    id: 'ship2',
-    position: ship2.position,
-    orientation: ship2.orientation,
-    size: new Vector(64, 64),
+  Lighting.addEntities([{
+    entity: ship2,
     normalMap: '/assets/mookie-ship-normal-map2.png',
-  }])[0];
+  }]);
   ship2.moveToPosition();
 
-  asteroid.entity = Lighting.addEntities([{
-    id: 'asteroid',
-    position: asteroid.position,
-    orientation: asteroid.orientation,
-    size: new Vector(128, 128),
-    normalMap: '/assets/asteroid-normal-map.png',
-  }])[0];
+  Lighting.addEntities([{
+    entity: asteroid,
+    normalMap: '/assets/asteroid2-normal-map.png',
+  }]);
   asteroid.moveToPosition();
 
   requestAnimationFrame(start);
@@ -168,15 +163,27 @@ function start(now: number) {
   requestAnimationFrame(update);
 }
 
+let asteroidFrame = 0;
+let frameRate = 1;
+let frame = frameRate;
 function update(now: number) {
   const deltaTime = (now - last) / 1000;
   last = now;
 
-  // ship.orientation = (ship.orientation + 0.5) % 360;
-  // ship.moveToPosition();
+  ship.orientation = (ship.orientation + 0.5) % 360;
+  ship.moveToPosition();
 
-  // ship2.orientation = (ship2.orientation + 0.5) % 360;
-  // ship2.moveToPosition();
+  ship2.orientation = (ship2.orientation + 0.5) % 360;
+  ship2.moveToPosition();
+
+  if (--frame === 0) {
+    frame = frameRate;
+    asteroidFrame = ++asteroidFrame % 32;
+
+    asteroid.offset.x = -asteroid.size.x * (asteroidFrame % 8);
+    asteroid.offset.y = -asteroid.size.y * Math.floor(asteroidFrame / 8);
+    asteroid.animate(asteroidFrame);
+  }
 
   (document.querySelector('.static-ship') as HTMLElement).style.rotate = `${ship.orientation}deg`;
 
