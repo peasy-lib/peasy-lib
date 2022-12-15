@@ -11,18 +11,45 @@
 .border {
   display: inline-block;
   position: relative;
-  margin: 10px;
-  width: 400px;
-  height: 400px;
+  margin: 50px;
+  width: 1100px;
+  height: 1100px;
   border: 2px solid black;
   box-sizing: content-box;
+  image-rendering: pixelated;
 }
 
 .ball {
-  display: inline-block;
+  display: none; /* inline-block; */
   position: absolute;
   width: 20px;
   height: 20px;
   border-radius: 50%;
   will-change: transform;
+}
+
+.ball .shape {
+  display: inline-block;
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 1px solid black;
+}
+
+.position {
+  position: absolute;
+  left: -2px;
+  top: -2px;
+  width: 4px;
+  height: 4px;
+  background-color: black;
+}
+
+canvas {
+  position: absolute;
+  left: 28px;
+  top: 147px;
+  margin-left: 50px;
+  border: 2px solid #ff000077;
+  image-rendering: pixelated;
 }

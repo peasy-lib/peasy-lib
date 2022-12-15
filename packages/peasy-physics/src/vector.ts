@@ -65,22 +65,34 @@ export class Vector {
 
   public add(delta: Vector | number[], update = false): Vector {
     const vector = update ? this : this.clone();
-    const deltaVector = delta instanceof Vector ? delta : new Vector(delta[0], delta[1], delta[2]);
-    vector.x += deltaVector.x;
-    vector.y += deltaVector.y;
+    const { x, y, z } = Array.isArray(delta) ? { x: delta[0], y: delta[1], z: delta[2] } : delta;
+    vector.x += x;
+    vector.y += y;
     if (this instanceof Vector3) {
-      vector.z += deltaVector.z;
+      vector.z += z;
     }
+    // const deltaVector = delta instanceof Vector ? delta : new Vector(delta[0], delta[1], delta[2]);
+    // vector.x += deltaVector.x;
+    // vector.y += deltaVector.y;
+    // if (this instanceof Vector3) {
+    //   vector.z += deltaVector.z;
+    // }
     return vector;
   }
   public subtract(delta: Vector | number[], update = false): Vector {
     const vector = update ? this : this.clone();
-    const deltaVector = delta instanceof Vector ? delta : new Vector(delta[0], delta[1], delta[2]);
-    vector.x -= deltaVector.x;
-    vector.y -= deltaVector.y;
+    const { x, y, z } = Array.isArray(delta) ? { x: delta[0], y: delta[1], z: delta[2] } : delta;
+    vector.x -= x;
+    vector.y -= y;
     if (this instanceof Vector3) {
-      vector.z -= deltaVector.z;
+      vector.z -= z;
     }
+    // const deltaVector = delta instanceof Vector ? delta : new Vector(delta[0], delta[1], delta[2]);
+    // vector.x -= deltaVector.x;
+    // vector.y -= deltaVector.y;
+    // if (this instanceof Vector3) {
+    //   vector.z -= deltaVector.z;
+    // }
     return vector;
   }
   public multiply(delta: number | Vector, update = false): Vector {
@@ -104,6 +116,17 @@ export class Vector {
     return vector;
   }
 
+  public modulus(delta: number | Vector, update = false): Vector {
+    const vector = update ? this : this.clone();
+    const deltaVector = delta instanceof Vector ? delta : new Vector(delta, delta, delta);
+    vector.x %= deltaVector.x;
+    vector.y %= deltaVector.y;
+    if (this instanceof Vector3) {
+      vector.z %= deltaVector.z;
+    }
+    return vector;
+  }
+
   public normalize(update = false): Vector {
     const vector = update ? this : this.clone();
     const magnitude = this.magnitude;
@@ -111,6 +134,10 @@ export class Vector {
       vector.divide(magnitude, true);
     }
     return vector;
+  }
+
+  public dot(delta: Vector): number {
+    return (this.x * delta.x) + (this.y * delta.y);
   }
 
   public sign(update = false): Vector {
@@ -143,6 +170,17 @@ export class Vector {
     return vector;
   }
 
+  public rotate(degrees: number, update = false): Vector {
+    const vector = update ? this : this.clone();
+    const radians = degrees * (Math.PI / 180);
+    const sin = Math.sin(radians);
+    const cos = Math.cos(radians);
+    const { x, y } = vector;
+    vector.x = x * cos - y * sin;
+    vector.y = x * sin + y * cos;
+    return vector;
+  }
+
   public clone(): Vector | Vector3 {
     return this instanceof Vector3
       ? new Vector3(this.x, this.y, this.z)
@@ -157,8 +195,8 @@ export class Vector {
 
   public toString(): string {
     return this instanceof Vector3
-      ? `${this.x},${this.y},${this.z}`
-      : `${this.x},${this.y}`;
+      ? `${this.x}, ${this.y},${this.z}`
+      : `${this.x}, ${this.y}`;
   }
 
   public toVector2(): Vector {
