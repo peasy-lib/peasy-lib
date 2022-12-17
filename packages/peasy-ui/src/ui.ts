@@ -105,7 +105,7 @@ export class UI {
         if (attr.name.startsWith('pui.')) {
           const match = attr.value.match(UI.regexAttribute);
           let [_ignore, name, toUI, fromUI, value] = match!;
-          let fixedValue: string = '';
+          let fixedValue: string | undefined;
           let template;
           let oneTime = false;
           // let type: IUIBindingType = '';
@@ -297,6 +297,10 @@ export class UI {
   public static resolveProperty(object: any, property: string): { target: any; property: string } {
     property = property.replace('[', '.').replace(']', '.');
     const properties = property.split('.').filter(prop => (prop ?? '').length > 0);
+    while (properties[0] === '$parent' && object.$parent != null) {
+      object = object.$parent;
+      properties.shift();
+    }
     let target = '$model' in object ? object.$model : object;
     while (properties.length > 1) {
       target = target[properties.shift()!];
