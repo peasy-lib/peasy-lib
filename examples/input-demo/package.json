@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@peasy-lib/peasy-input": "0.2.0",
-    "@peasy-lib/peasy-ui": "0.9.19"
+    "@peasy-lib/peasy-ui": "0.9.20"
   },
   "devDependencies": {
     "@types/node": "^17.0.23",
