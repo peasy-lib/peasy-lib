@@ -5,6 +5,11 @@ import { Stadium } from './stadium';
 import { Vector } from './vector';
 
 export class Point extends Vector {
+  public static from(x: number | number[] | Vector | string | { x: number; y: number; z?: number } = 0, y = 0, z = 0): Point {
+    const vector = Vector.from(x, y, z);
+    return new Point(vector.x, vector.y, vector.z);
+  }
+
   public within(shape: Rect | Circle | Stadium | RoundedRect): boolean {
     if (shape instanceof Rect) {
       return !(this.x < shape.left ||

@@ -65,20 +65,20 @@ export class Shape {
     }
     switch (input.shape) {
       case 'rect': {
-        const size = new Vector(input.size);
-        const position = new Vector(input.position ?? [0, 0]);
+        const size = Vector.from(input.size);
+        const position = Vector.from(input.position ?? [0, 0]);
         shape.shape = new Rect(position, size, input.orientation);
         break;
       }
       case 'circle': {
         const radius = input.radius as number;
-        const position = new Vector(input.position ?? [0, 0]);
+        const position = Vector.from(input.position ?? [0, 0]);
         shape.shape = new Circle(position, radius);
         break;
       }
       case 'stadium': {
-        const size = new Vector(input.size);
-        const position = new Vector(input.position ?? [0, 0]);
+        const size = Vector.from(input.size);
+        const position = Vector.from(input.position ?? [0, 0]);
         shape.shape = new Stadium(position, size, input.alignment as StadiumAlignment, input.orientation);
         break;
       }

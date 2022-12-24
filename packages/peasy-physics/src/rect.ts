@@ -7,115 +7,128 @@ import { Vector } from "./vector";
 export class Rect {
   public worldSpace = false;
 
-  #position: Vector;
-  #size: Vector;
-  #orientation: number = 0;
+  private _position: Vector;
+  private _size: Vector;
+  private _orientation: number = 0;
 
-  #vertices: Vector[] = [];
+  private _vertices: Vector[] = [];
 
   public constructor(
     position: Vector,
     size: Vector,
     orientation: number = 0,
   ) {
-    this.#position = position;
-    this.#size = size;
-    this.#orientation = orientation;
+    this._position = position;
+    this._size = size;
+    this._orientation = orientation;
   }
 
   public get position(): Vector {
-    return this.#position;
+    return this._position;
   }
   public set position(value: Vector) {
-    this.#position = value;
-    this.#vertices = [];
+    this._position = value;
+    this._vertices = [];
   }
 
   public get size(): Vector {
-    return this.#size;
+    return this._size;
   }
   public set size(value: Vector) {
-    this.#size = value;
-    this.#vertices = [];
+    this._size = value;
+    this._vertices = [];
   }
 
   public get orientation(): number {
-    return this.#orientation;
+    return this._orientation;
   }
   public set orientation(value: number) {
-    this.#orientation = value;
-    this.#vertices = [];
+    this._orientation = value;
+    this._vertices = [];
   }
 
   public get half(): Vector {
-    return this.#size.half;
+    return this._size.half;
   }
 
   public get left(): number {
-    return this.#position.x - this.half.x;
+    return this._position.x - this.half.x;
   }
   public set left(value: number) {
-    this.#position.x = value + this.half.x;
-    this.#vertices = [];
+    this._position.x = value + this.half.x;
+    this._vertices = [];
   }
   public get right(): number {
-    return this.#position.x + this.half.x;
+    return this._position.x + this.half.x;
   }
   public set right(value: number) {
-    this.#position.x = value - this.half.x;
-    this.#vertices = [];
+    this._position.x = value - this.half.x;
+    this._vertices = [];
   }
   public get top(): number {
-    return this.#position.y - this.half.y;
+    return this._position.y - this.half.y;
   }
   public set top(value: number) {
-    this.#position.y = value + this.half.y;
-    this.#vertices = [];
+    this._position.y = value + this.half.y;
+    this._vertices = [];
   }
   public get bottom(): number {
-    return this.#position.y + this.half.y;
+    return this._position.y + this.half.y;
   }
   public set bottom(value: number) {
-    this.#position.y = value - this.half.y;
-    this.#vertices = [];
+    this._position.y = value - this.half.y;
+    this._vertices = [];
   }
 
   public get width(): number {
-    return this.#size.x;
+    return this._size.x;
   }
   public set width(value: number) {
-    this.#size.x = value;
-    this.#vertices = [];
+    this._size.x = value;
+    this._vertices = [];
   }
   public get height(): number {
-    return this.#size.y;
+    return this._size.y;
   }
   public set height(value: number) {
-    this.#size.y = value;
-    this.#vertices = [];
+    this._size.y = value;
+    this._vertices = [];
+  }
+
+  public get area(): number {
+    return this.size.x * this.size.y;
+  }
+
+  public get boundingRadius(): number {
+    const halfSquared = this.half.multiply(this.half);
+    return Math.sqrt(halfSquared.x + halfSquared.y);
+  }
+
+  public get boundingBox(): Rect {
+    return this;
   }
 
   public get vertices(): Vector[] {
-    if (this.#vertices.length > 0) {
-      return this.#vertices;
+    if (this._vertices.length > 0) {
+      return this._vertices;
     }
-    this.#vertices = [
+    this._vertices = [
       new Vector(-this.half.x, -this.half.y),
       new Vector(+this.half.x, -this.half.y),
       new Vector(+this.half.x, +this.half.y),
       new Vector(-this.half.x, +this.half.y),
     ];
-    const position = this.#position;
-    const orientation = this.#orientation;
-    this.#position = new Vector(0, 0);
-    this.#orientation = 0;
+    const position = this._position;
+    const orientation = this._orientation;
+    this._position = new Vector(0, 0);
+    this._orientation = 0;
     this.transform(position, orientation);
-    return this.#vertices;
+    return this._vertices;
   }
 
   public equals(rect: Rect): boolean {
-    if (!this.#position.equals(rect.position) ||
-      !this.#size.equals(rect.size)
+    if (!this._position.equals(rect.position) ||
+      !this._size.equals(rect.size)
     ) {
       return false;
     }
@@ -126,10 +139,10 @@ export class Rect {
     const vertices = this.vertices;
     if (Math.abs(degrees) !== 0) {
       vertices.forEach(vertex => vertex.rotate(degrees, true));
-      this.#position.rotate(degrees, true);
-      this.#orientation += degrees;
+      this._position.rotate(degrees, true);
+      this._orientation += degrees;
     }
-    this.#vertices = vertices;
+    this._vertices = vertices;
     // console.log('orientation', this.#orientation);
     // if (this.#orientation < 0) {
     //   this.rotate(-this.#orientation);
@@ -139,8 +152,8 @@ export class Rect {
   public translate(position: Vector): void {
     const vertices = this.vertices;
     vertices.forEach(vertex => vertex.add(position, true));
-    this.#position.add(position, true);
-    this.#vertices = vertices;
+    this._position.add(position, true);
+    this._vertices = vertices;
   }
 
   public transform(position: Vector, degrees: number): void {
@@ -149,13 +162,26 @@ export class Rect {
   }
 
   public resetVertices(): void {
-    this.#vertices = [];
+    this._vertices = [];
   }
 
   public overlaps(target: Rect | Circle | Stadium): boolean {
-    const point = new Point(this.position);
+    if (target instanceof Rect) {
+      return !(this.left > target.right ||
+        this.right < target.left ||
+        this.top > target.bottom ||
+        this.bottom < target.top);
+    }
+    const point = Point.from(this.position);
     const expanded = this.getSweptShape(target);
     return point.within(expanded);
+  }
+
+  public within(target: Rect): boolean {
+    return !(this.left < target.left ||
+      this.right > target.right ||
+      this.top < target.top ||
+      this.bottom > target.bottom);
   }
 
   public getSweptShape(target: Rect | Circle | Stadium): Rect | Circle | Stadium | RoundedRect {
@@ -182,10 +208,10 @@ export class Rect {
   }
 
   public toString(): string {
-    return `[${this.#position}] (${this.#size})`;
+    return `[${this._position}] (${this._size})`;
   }
 
   public clone(): Rect {
-    return new Rect(this.#position.clone(), this.#size.clone(), this.#orientation);
+    return new Rect(this._position.clone(), this._size.clone(), this._orientation);
   }
 }

@@ -1,4 +1,4 @@
-import { Circle, Line, Physics, Polygon, Ray, Rect, RoundedRect, Stadium, Vector, Intersection, Point, Entity as PhysicsEntity } from '@peasy-lib/peasy-physics';
+import { Circle, Line, Physics, Polygon, Ray, Rect, RoundedRect, Stadium, Vector, Intersection, Point, Entity as PhysicsEntity, Force } from '@peasy-lib/peasy-physics';
 import { UI } from '@peasy-lib/peasy-ui';
 import 'styles.css';
 import { Canvas } from './canvas';
@@ -107,7 +107,12 @@ async function main(): Promise<void> {
   // });
 
   canvas = new Canvas(model.canvas);
-  Physics.initialize();
+  Physics.initialize({
+    ctx: model.canvas.getContext('2d'),
+    showAreas: false,
+    // resolver: 'spatial-hash-grid',
+  });
+
   console.log(Physics.collisions);
 
   model.balls = Physics.addEntities(model.balls);
@@ -137,8 +142,14 @@ async function main(): Promise<void> {
 }
 
 let last;
+let startTime;
+let updateTime = 0;
+let updateTotal = 0;
+let updateCount = 0;
+let checkUpdate = false;
 function start(now: number) {
   last = now;
+  startTime = now;
   requestAnimationFrame(update);
 }
 
@@ -156,20 +167,33 @@ function update(now: number) {
 
   if (model.running) {
     updateEntities();
-    Physics.update(deltaTime, now);
-    canvas.update(model.balls);
+    const updateStart = performance.now();
+    const stats = Physics.update(deltaTime, now);
+    const updateEnd = performance.now();
+    if (stats.time !== -1 && checkUpdate) {
+      updateTime = updateEnd - updateStart;
+      updateTotal += updateTime;
+      updateCount++;
+    } else if (!checkUpdate) {
+      if (now - startTime > 20000) {
+        console.log('Starting update checks');
+        checkUpdate = true;
+      }
+    }
+    // canvas.update(model.balls);
 
     // polygons.forEach(polygon => canvas.drawShape(polygon, 'orange'));
 
     if (mouse != null) {
       ray.end = mouse;
     }
-    canvas.drawShape(ray, 'purple');
+    Physics.canvas?.drawShape(ray, 'purple');
 
     // updateCombinations();
     // updateMoveTo();
-    showEntities();
+    showEntities(stats);
 
+    Physics.canvas.drawText(`Time per update: ~${round(updateTotal / updateCount)} - ${round(updateTime)}`, new Vector(300, 25), 'black');
   }
   UI.update();
   requestAnimationFrame(update);
@@ -190,10 +214,11 @@ function setupCombinations() {
       b = b.clone();
       const x = 50 + ((index % 3) * 350);
       const y = 75 + (Math.floor(index / 3) * 120);
-      a.position = new Vector(x, y);
-      b.position = new Vector(x + 100, y);
+      // TODO: Need to fix this!
+      // a.vertices = new Vector(x, y);
+      // b.vertices = new Vector(x + 100, y);
       const swept = a.getSweptShape(b);
-      swept.position.add(new Vector(100, 0), true);
+      // swept._vertices.add(new Vector(100, 0), true);
 
       shapes.push(a, b, swept);
       index++;
@@ -406,8 +431,29 @@ function updateMoveTo() {
 
 const entities = [];
 let currentEntity;
+const entityAmount = 50;
 function setupEntities() {
-  for (let i = 0; i < 50; i++) {
+  Physics.addForce(Force.Drag({ density: 1, coefficient: 0.01 }));
+  Physics.addForce(Force.Gravity({ G: 50 }));
+
+  // Physics.addForce({
+  //   name: 'drag',
+  //   callback: (force: Force, entity: Entity): Vector => function (force, entity, a, b) {
+  //     console.log('FORCE', force.name, entity, a, b);
+  //     return new Vector();
+  //   }(force, entity, 123, 456)
+  // });
+  // Physics.addForce({
+  //   name: 'gravity',
+  //   direction: { x: 0, y: 1 },
+  //   maxMagnitude: 1000,
+  //   acceleration: 200,
+  //   duration: 0,
+  // });
+
+
+  const sizeFactor = entityAmount > 50 ? entityAmount / 100 : 1;
+  for (let i = 0; i < entityAmount; i++) {
     const shape = {
       position: { x: 0, y: 0 },
       radius: undefined,
@@ -416,16 +462,16 @@ function setupEntities() {
     };
     switch (randomInt(1, 4)) {
       case 1:
-        shape.radius = random(25, 50);
+        shape.radius = random(25 / sizeFactor, 50 / sizeFactor);
         // shape = new Circle(new Vector(), random(25, 50));
         break;
       case 2:
-        shape.size = new Vector(random(10, 100), random(10, 100));
+        shape.size = new Vector(random(10 / sizeFactor, 100 / sizeFactor), random(10 / sizeFactor, 100 / sizeFactor));
         // shape = new Rect(new Vector(), new Vector(random(10, 100), random(10, 100)));
         break;
       case 3: {
         const alignment = random(0, 1) < 0.5 ? 'horizontal' : 'vertical';
-        const size = new Vector(random(10, 100), random(10, 100));
+        const size = new Vector(random(10 / sizeFactor, 100 / sizeFactor), random(10 / sizeFactor, 100 / sizeFactor));
         if (alignment === 'horizontal') {
           size.x = Math.max(size.x, size.y * 2);
         } else {
@@ -440,26 +486,34 @@ function setupEntities() {
 
     // shapes: [rect ? { size: [radius * 2, radius * 2], position: offset, orientation: 0 } : { radius, position: offset }],
 
-    let entity = new Entity(new Vector(random(100, 800), random(100, 800)));
+    let entity = new Entity(new Vector(random(1, 1100), random(1, 1100)));
     entity.color = `#${randomInt(0, 255).toString(16).padStart(2, '0')}${randomInt(0, 255).toString(16).padStart(2, '0')}${randomInt(0, 255).toString(16).padStart(2, '0')}`;
 
     entity.shapes = [shape];
     entity.forces = [{
       name: 'movement',
       direction: { x: Math.random() * 2 - 1, y: Math.random() * 2 - 1 },
-      maxMagnitude: random(0, 300),
+      maxMagnitude: 600,
+      // maxMagnitude: random(0, 300),
       duration: 0,
     }];
-    entity = Physics.addEntities(entity)[0];
+    entity.maxSpeed = 500;
 
-    if (!entities.some(e => e.shapes[0].worldShape.shape.overlaps(entity.shapes[0].worldShape.shape))) {
-      entities.push(entity);
-    } else {
-      Physics.removeEntities(entity as PhysicsEntity);
-      i--;
+    entity = Physics.addEntities(entity)[0];
+    entity.mass = entity.shapes[0].shape.area * 2;
+    if (randomInt(1, 5) === 1) {
+      entity.mass = 0;
     }
+    entities.push(entity);
+    // if (!entities.some(e => e.shapes[0].worldShape.shape.overlaps(entity.shapes[0].worldShape.shape))) {
+    //   entities.push(entity);
+    // } else {
+    //   Physics.removeEntities(entity as PhysicsEntity);
+    //   i--;
+    // }
   }
   currentEntity = entities[0];
+  // currentEntity.mass = 1000000;
 }
 
 function updateEntities() {
@@ -538,38 +592,105 @@ function updateEntities() {
   // }
 }
 
-function showEntities() {
+let statsTotal = {};
+let dropped = 0;
+let totalUpdates = 0;
+let showRayCollision = false;
+let showData = false;
+function showEntities(stats) {
+
   if (currentEntity.position.x !== ray.origin.x || currentEntity.position.y !== ray.origin.y) {
     ray.origin = currentEntity.position.clone();
   }
 
-  let firstIntersection = new Intersection();
-  entities.forEach(entity => {
-    const entityShape = entity.shapes[0].worldShape.shape;
-    if (entity === currentEntity) {
-      canvas.drawShape(entityShape, 'blue', entity.color);
-      return;
-    }
-    const intersection = ray.getIntersection(entityShape);
-    if (!intersection.intersects) {
-      canvas.drawShape(entityShape, 'black', entity.color);
-      return;
-    }
+  // let firstIntersection = new Intersection();
+  // entities.forEach(entity => {
+  //   const entityShape = entity.shapes[0].worldShape.shape;
+  //   const movementRadius = Math.sqrt(entity.movementRadius);
+  //   const movementBox = entity.movementBox;
+  //   if (entity === currentEntity) {
+  //     canvas.drawShape(entityShape, 'blue', entity.color);
+  //     if (showData) {
+  //       canvas.drawShape(new Circle(entity.position, movementRadius), 'red');
+  //       canvas.drawShape(new Rect(entity.position, movementBox), 'red');
+  //       canvas.drawText(Math.floor(entity.speed), entity.position.add([-5, 15]), 'black');
+  //     }
+  //     return;
+  //   }
+  //   if (showRayCollision) {
+  //     const intersection = ray.getIntersection(entityShape);
+  //     if (!intersection.intersects) {
+  //       canvas.drawShape(entityShape, 'black', entity.color);
+  //       if (showData) {
+  //         canvas.drawShape(new Circle(entity.position, movementRadius), 'red');
+  //         canvas.drawShape(new Rect(entity.position, movementBox), 'red');
+  //         canvas.drawText(Math.floor(entity.speed), entity.position.add([-5, 15]), 'black');
+  //       }
+  //       return;
+  //     }
 
-    // console.log(intersection.time);
-    canvas.drawShape(entityShape, 'red', entity.color);
-    if (intersection.time < firstIntersection.time) {
-      firstIntersection = intersection;
-    }
-  });
-  if (firstIntersection.intersects) {
-    canvas.drawShape(new Circle(firstIntersection.point, 10), 'red');
-    canvas.drawShape(new Line(firstIntersection.point, firstIntersection.point.add(firstIntersection.normal.multiply(15))), 'red');
-    canvas.drawShape(new Line(firstIntersection.point, firstIntersection.point.add(firstIntersection.tangent.multiply(15))), 'black');
+  //     // console.log(intersection.time);
+  //     canvas.drawShape(entityShape, 'red', entity.color);
+  //     if (showData) {
+  //       canvas.drawShape(new Circle(entity.position, movementRadius), 'red');
+  //       canvas.drawShape(new Rect(entity.position, movementBox), 'red');
+  //       canvas.drawText(Math.floor(entity.speed), entity.position.add([-5, 15]), 'black');
+  //     } if (intersection.time < firstIntersection.time) {
+  //       firstIntersection = intersection;
+  //     }
+  //   } else {
+  //     canvas.drawShape(entityShape, 'black', entity.color);
+  //     if (showData) {
+  //       canvas.drawShape(new Circle(entity.position, movementRadius), 'red');
+  //       canvas.drawShape(new Rect(entity.position, movementBox), 'red');
+  //       canvas.drawText(Math.floor(entity.speed), entity.position.add([-5, 15]), 'black');
+  //     }
+  //     return;
+  //   }
+  // });
+  // if (firstIntersection.intersects) {
+  //   canvas.drawShape(new Circle(firstIntersection.point, 10), 'red');
+  //   canvas.drawShape(new Line(firstIntersection.point, firstIntersection.point.add(firstIntersection.normal.multiply(15))), 'red');
+  //   canvas.drawShape(new Line(firstIntersection.point, firstIntersection.point.add(firstIntersection.tangent.multiply(15))), 'black');
 
-    if (Array.isArray(firstIntersection.shapes)) {
-      firstIntersection.shapes.forEach(shape => canvas.drawShape(shape, 'red'));
+  //   if (Array.isArray(firstIntersection.shapes)) {
+  //     firstIntersection.shapes.forEach(shape => canvas.drawShape(shape, 'red'));
+  //   }
+  // }
+
+  // Shouldn't really be in show, but will work for now
+  for (const mover of Array.from(stats.moved) as Entity[]) {
+    mover.position.add([1100, 1100], true).modulus(1100, true);
+    // const shape = mover.shapes[0].worldShape.shape;
+    // if (shape.position.x < 0) {
+    //   mover.velocity.x = -mover.velocity.x;
+    // } else if (shape.position.x > 1100) {
+    //   mover.velocity.x = -mover.velocity.x;
+    // }
+    // if (shape.position.y < 0) {
+    //   mover.velocity.y = -mover.velocity.y;
+    // } else if (shape.position.y > 1100) {
+    //   mover.velocity.y = -mover.velocity.y;
+    // }
+  }
+
+  if (stats.time === -1) {
+    dropped++;
+  } else {
+    totalUpdates++;
+  }
+  stats['DROPPED'] = dropped;
+
+  const pos = new Vector(75, 75);
+  const inc = 15;
+  let i = 0;
+  for (const stat in stats) {
+    let value = stats[stat];
+    if (value instanceof Set) {
+      value = value.size;
     }
+    statsTotal[stat] = (statsTotal[stat] ?? 0) + value;
+    Physics.canvas.drawText(`${stat}: ~${round(statsTotal[stat] / totalUpdates)} - ${round(value)}`, pos.add([0, i++ * inc]), 'black');
   }
 }
 
@@ -578,6 +699,10 @@ function random(min, max) {
 }
 function randomInt(min, max) {
   return Math.floor(random(min, max));
+}
+function round(value: number, decimals = 2) {
+  const power = 10 ** decimals;
+  return Math.round((value + Number.EPSILON) * power) / power;
 }
 
 function minkowskiSum(a: Polygon, b: Polygon): Polygon {

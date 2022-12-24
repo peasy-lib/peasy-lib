@@ -8,7 +8,9 @@ export interface IVector {
 export class Entity {
   public shapes = [];
   public forces = [];
+  public mass: number = 1;
   public color?;
+  public maxSpeed?;
 
   public constructor(
     public position: Vector,

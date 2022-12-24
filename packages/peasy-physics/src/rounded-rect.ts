@@ -6,7 +6,7 @@ import { Vector } from "./vector";
 export class RoundedRect {
   public worldSpace = false;
 
-  #vertices: Vector[] = [];
+  private _vertices: Vector[] = [];
 
   public constructor(
     public position: Vector,
@@ -58,10 +58,10 @@ export class RoundedRect {
   }
 
   public get vertices(): Vector[] {
-    if (this.#vertices.length > 0) {
-      return this.#vertices;
+    if (this._vertices.length > 0) {
+      return this._vertices;
     }
-    this.#vertices = [
+    this._vertices = [
       new Vector(-this.half.x, -this.half.y),
       new Vector(+this.half.x, -this.half.y),
       new Vector(+this.half.x, +this.half.y),
@@ -72,7 +72,7 @@ export class RoundedRect {
     this.position = new Vector(0, 0);
     this.orientation = 0;
     this.transform(position, orientation);
-    return this.#vertices;
+    return this._vertices;
   }
 
   public equals(rect: RoundedRect): boolean {
@@ -91,7 +91,7 @@ export class RoundedRect {
       this.position.rotate(degrees, true);
       this.orientation += degrees;
     }
-    this.#vertices = vertices;
+    this._vertices = vertices;
     // console.log('orientation', this.orientation);
     // if (this.orientation < 0) {
     //   this.rotate(-this.orientation);
@@ -102,7 +102,7 @@ export class RoundedRect {
     const vertices = this.vertices;
     vertices.forEach(vertex => vertex.add(position, true));
     this.position.add(position, true);
-    this.#vertices = vertices;
+    this._vertices = vertices;
   }
 
   public transform(position: Vector, degrees: number): void {
@@ -111,7 +111,7 @@ export class RoundedRect {
   }
 
   public resetVertices(): void {
-    this.#vertices = [];
+    this._vertices = [];
   }
 
   // public getSweptShapes(target: Rect | Circle | Stadium): (Rect | Circle | Stadium | RoundedRect)[] {

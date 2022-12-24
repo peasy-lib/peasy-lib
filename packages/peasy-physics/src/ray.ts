@@ -12,11 +12,11 @@ export class Ray {
 
   public magnitude: number;
 
-  static #ToDegreesFactor = (180 / Math.PI);
-  static #AngleModifier = 360 + 90;
+  private static readonly _ToDegreesFactor = (180 / Math.PI);
+  private static readonly _AngleModifier = 360 + 90;
 
-  #directionVector?: Vector;
-  #directionAngle?: number;
+  private _directionVector?: Vector;
+  private _directionAngle?: number;
 
   public constructor(
     public origin: Vector,
@@ -25,9 +25,9 @@ export class Ray {
   ) {
     if (direction instanceof Vector) {
       this.magnitude = magnitude ?? direction.magnitude;
-      this.#directionVector = direction.normalize();
+      this._directionVector = direction.normalize();
     } else {
-      this.#directionAngle = direction;
+      this._directionAngle = direction;
       this.magnitude = magnitude ?? 1;
     }
   }
@@ -38,24 +38,24 @@ export class Ray {
   }
 
   public get directionVector(): Vector {
-    return this.#directionVector != null
-      ? this.#directionVector
+    return this._directionVector != null
+      ? this._directionVector
       : new Vector();
   }
 
   public get directionAngle(): number {
-    return this.#directionAngle != null
-      ? this.#directionAngle
-      : (Math.atan2(this.#directionVector!.y, this.#directionVector!.x) * Ray.#ToDegreesFactor + Ray.#AngleModifier) % 360;
+    return this._directionAngle != null
+      ? this._directionAngle
+      : (Math.atan2(this._directionVector!.y, this._directionVector!.x) * Ray._ToDegreesFactor + Ray._AngleModifier) % 360;
   }
 
   public set direction(direction: Vector | number) {
     if (direction instanceof Vector) {
-      this.#directionVector = direction;
-      this.#directionAngle = undefined;
+      this._directionVector = direction;
+      this._directionAngle = undefined;
     } else {
-      this.#directionAngle = direction;
-      this.#directionVector = undefined;
+      this._directionAngle = direction;
+      this._directionVector = undefined;
     }
   }
 

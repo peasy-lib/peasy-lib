@@ -10,7 +10,7 @@ export class Stadium {
   public horizontal: boolean;
   public worldSpace = false;
 
-  #vertices: Vector[] = [];
+  private _vertices: Vector[] = [];
 
   public constructor(
     public position: Vector,
@@ -71,11 +71,28 @@ export class Stadium {
     this.size.y = value;
   }
 
+  public get area(): number {
+    const r = this.radius;
+    const circle = Math.PI * r * r;
+    const rect = this.horizontal
+      ? (this.width - (r * 2)) * this.height
+      : (this.height - (r * 2)) * this.width;
+    return circle + rect;
+  }
+
+  public get boundingRadius(): number {
+    return Math.max(this.half.x, this.half.y);
+  }
+
+  public get boundingBox(): Rect {
+    return new Rect(this.position.clone(), this.size.clone());
+  }
+
   public get vertices(): Vector[] {
-    if (this.#vertices.length > 0) {
-      return this.#vertices;
+    if (this._vertices.length > 0) {
+      return this._vertices;
     }
-    this.#vertices = [
+    this._vertices = [
       new Vector(-this.half.x, -this.half.y),
       new Vector(+this.half.x, -this.half.y),
       new Vector(+this.half.x, +this.half.y),
@@ -86,7 +103,7 @@ export class Stadium {
     this.position = new Vector(0, 0);
     this.orientation = 0;
     this.transform(position, orientation);
-    return this.#vertices;
+    return this._vertices;
   }
 
   public equals(rect: Rect): boolean {
@@ -105,7 +122,7 @@ export class Stadium {
       this.position.rotate(degrees, true);
       this.orientation += degrees;
     }
-    this.#vertices = vertices;
+    this._vertices = vertices;
     // console.log('orientation', this.orientation);
     // if (this.orientation < 0) {
     //   this.rotate(-this.orientation);
@@ -116,7 +133,7 @@ export class Stadium {
     const vertices = this.vertices;
     vertices.forEach(vertex => vertex.add(position, true));
     this.position.add(position, true);
-    this.#vertices = vertices;
+    this._vertices = vertices;
   }
 
   public transform(position: Vector, degrees: number): void {
@@ -125,11 +142,11 @@ export class Stadium {
   }
 
   public resetVertices(): void {
-    this.#vertices = [];
+    this._vertices = [];
   }
 
   public overlaps(target: Rect | Circle | Stadium): boolean {
-    const point = new Point(this.position);
+    const point = Point.from(this.position);
     const expanded = this.getSweptShape(target);
     return point.within(expanded);
   }

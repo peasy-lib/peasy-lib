@@ -1,4 +1,3 @@
-import { posix } from 'path';
 import { Rect, Circle, Line, Vector, Point, Polygon, Ray, Stadium, RoundedRect } from '@peasy-lib/peasy-physics';
 
 export class Canvas {
@@ -591,6 +590,13 @@ export class Canvas {
     ctx.moveTo(position.x - size, position.y);
     ctx.lineTo(position.x + size, position.y);
     ctx.stroke();
+  }
+
+  public drawText(text: string, position: Vector, color: string, font = '11px Arial', debug = true) {
+    const ctx = this._ctx;
+    ctx.fillStyle = color;
+    ctx.font = font;
+    ctx.fillText(text, position.x, position.y);
   }
 
   public log(...args) {

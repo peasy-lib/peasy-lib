@@ -1,55 +1,52 @@
-# Peasy Lighting
+# Peasy Physics
 
-This is the repository for Peasy Lighting, a small-ish and relatively easy to use lighting library.
+This is the repository for Peasy Physics, a small-ish and relatively easy to use physics library.
 
 ## Introduction
 
-Peasy Lighting provides uncomplicated Lighting for HTML. It's intended to be used in vanilla JavaScript/Typescript projects where using "proper lighting" is too cumbersome and adding a complete engine is overkill or simply not desired. Thanks to the small scope of the library, performance is decent.
+Peasy Physics provides uncomplicated physics. It's intended to be used in vanilla JavaScript/Typescript projects.
 
 ## First look
 
-In Peasy Lighting one or more lighting layers are added on top of existing graphics in an element serving as viewport. Peasy Lighting only requires light sources to be added, but by providing informaton about entities more advanced features such as shadows can be used.
+Peasy Physics applies physics to one or more added entities according to the forces applied to their shapes.
 
-```html
-<div id="my-viewport" style="position: relative">
-    <!--  Whatever graphics you've got -->
-</div>
-```
 ```ts
-// Add a light source
-const light = Lighting.addLight({
-    position: new Vector(150, 150),
-    radius: 250,
-    color: 'red',
-    viewport: document.querySelector('#my-viewport'),
+// Add an entity
+const entity = {
+  position: { x: 100, y: 100 },
+  color: 'blue',
+  shapes: [{ radius: 50 }],
+  maxSpeed: 500,
+  forces: [{ direction: { x: 50, y: 25 }, duration: 0 }],
+};
+const physicsEntity = Physics.addEntities(entity);
+
+// Add some more force
+physicsEntity.addForce({
+  name: 'movement',
+  direction: new Vector(100, 50),
+  maxMagnitude: 500,
+  duration: 0,
 });
-// Render the light source
-Lighting.update();
 
-// Move the light source
-light.position.x = 200;
-light.position.y = 250;
-light.position.radius = 200;
-light.position.color = 'green';
-
-// Render the moved light source
-Lighting.update();
+// In game loop
+Physics.update();
 ```
-This example creates and renders a light source and then moves and re-renders it.
+This example adds an entity and then tracks it regarding movement and collisions.
 
 ## Getting started
 
-If you've got a build process and are using npm, install Peasy Lighting with
+If you've got a build process and are using npm, install Peasy Physics with
 
-    npm i @peasy-lib/peasy-lighting
+    npm i @peasy-lib/peasy-physics
 
 and `import` it into whichever files you want to use it
 
 ```ts
-import { Lighting } from '@peasy-lib/peasy-lighting';
+import { Physics } from '@peasy-lib/peasy-physics';
 ```
 
-If you don't have a build process or don't want to install it, use a `script` tag of type `module` and import from `https://cdn.skypack.dev/@peasy-lib/peasy-lighting` instead.
+If you don't have a build process or don't want to install it, use a `script` tag of type `module` and import from `https://cdn.skypack.dev/@peasy-lib/peasy-physics` instead.
 
 ```html
 <html>
@@ -58,17 +55,31 @@ If you don't have a build process or don't want to install it, use a `script` ta
     <div>Hello, world!</div>
   </div>
   <script type="module">
-    import { Lighting } from "https://cdn.skypack.dev/@peasy-lib/peasy-lighting";
+    import { Physics } from "https://cdn.skypack.dev/@peasy-lib/peasy-physics";
 
-    // Add a light source
-    const light = Lighting.addLight({
-        position: new Vector(150, 150),
-        radius: 250,
-        color: 'red',
-        viewport: document.querySelector('#my-viewport'),
+    // Add an entity
+    const entity = {
+      position: { x: 100, y: 100 },
+      color: 'blue',
+      shapes: [{ radius: 50 }],
+      maxSpeed: 500,
+      forces: [{ direction: { x: 50, y: 25 }, duration: 0 }],
+    };
+    const physicsEntity = Physics.addEntities(entity);
+
+    // Add some more force
+    physicsEntity.addForce({
+      name: 'movement',
+      direction: new Vector(100, 50),
+      maxMagnitude: 500,
+      duration: 0,
     });
-    // Render the light source
-    Lighting.update();
+
+    const tick = () => {
+      Physics.update();
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
   </script>
 </body>
 </html>
@@ -76,9 +87,7 @@ If you don't have a build process or don't want to install it, use a `script` ta
 
 ## Features and syntax
 
-Peasy Lighting supports multiple dynamic light sources with colour mixing for overlapping lights. By specifying information about entities and normal maps it's possible to also get "3d shadows" for entities.
-
-Documentation to be written, but for now check out the source code of the demo app.
+To be written.
 
 ## Development and contributing
 

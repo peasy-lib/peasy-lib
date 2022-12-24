@@ -21,8 +21,30 @@ export class Circle {
   public get left(): number {
     return this.position.x - this.half.x;
   }
+  public get right(): number {
+    return this.position.x + this.half.x;
+  }
   public get top(): number {
     return this.position.y - this.half.y;
+  }
+  public get bottom(): number {
+    return this.position.y + this.half.y;
+  }
+
+  public get area(): number {
+    return Math.PI * this.radius * this.radius;
+  }
+
+  public get boundingRadius(): number {
+    return this.radius;
+  }
+
+  public get boundingBox(): Rect {
+    return new Rect(this.position.clone(), new Vector(this.radius * 2, this.radius * 2));
+  }
+
+  public get vertices(): Vector[] {
+    return [];
   }
 
   public equals(circle: Circle): boolean {
@@ -48,7 +70,7 @@ export class Circle {
   }
 
   public overlaps(target: Rect | Circle | Stadium): boolean {
-    const point = new Point(this.position);
+    const point = Point.from(this.position);
     const expanded = this.getSweptShape(target);
     return point.within(expanded);
   }
