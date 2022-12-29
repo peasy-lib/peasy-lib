@@ -194,6 +194,7 @@ function update(now: number) {
     showEntities(stats);
 
     Physics.canvas.drawText(`Time per update: ~${round(updateTotal / updateCount)} - ${round(updateTime)}`, new Vector(300, 25), 'black');
+    Physics.canvas.drawText(`Points: circles: ${points.circles}, rectangles: ${points.rectangles}`, new Vector(500, 25), 'black');
   }
   UI.update();
   requestAnimationFrame(update);
@@ -432,6 +433,10 @@ function updateMoveTo() {
 const entities = [];
 let currentEntity;
 const entityAmount = 50;
+const points = {
+  circles: 0,
+  rectangles: 0,
+};
 function setupEntities() {
   Physics.addForce(Force.Drag({ density: 1, coefficient: 0.01 }));
   Physics.addForce(Force.Gravity({ G: 50 }));
@@ -498,6 +503,21 @@ function setupEntities() {
       duration: 0,
     }];
     entity.maxSpeed = 500;
+    entity.colliding = function (entity: PhysicsEntity, intersection: Intersection) {
+      if (this === intersection.mover) {
+        return 'collide';
+      }
+      const thisShape = this.shapes[0].shape;
+      const entityShape = entity.shapes[0].shape;
+      if (
+        (thisShape instanceof Circle && entityShape instanceof Rect) ||
+        (thisShape instanceof Rect && entityShape instanceof Circle)
+      ) {
+        points[thisShape instanceof Circle ? 'circles' : 'rectangles']++;
+        return 'remove';
+      }
+      return 'collide';
+    }
 
     entity = Physics.addEntities(entity)[0];
     entity.mass = entity.shapes[0].shape.area * 2;

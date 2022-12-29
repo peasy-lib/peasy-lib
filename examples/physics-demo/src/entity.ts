@@ -11,6 +11,7 @@ export class Entity {
   public mass: number = 1;
   public color?;
   public maxSpeed?;
+  public colliding?;
 
   public constructor(
     public position: Vector,

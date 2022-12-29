@@ -3,9 +3,13 @@ import { Force, IForce } from "./force";
 import { IShape, Shape } from './shape';
 import { IVector, Vector } from "./vector";
 import { Rect } from './rect';
+import { Intersection } from './intersection';
 
-export interface IEntity extends Omit<Partial<Entity>, 'position'> {
+export type CollidingResolution = 'collide' | 'remove';
+
+export interface IEntity extends Omit<Partial<Entity>, 'position' | 'colliding'> {
   position?: IVector;
+  colliding?: (entity: Entity, intersection: Intersection) => CollidingResolution;
 }
 
 export interface IExternalEntity {
@@ -32,6 +36,8 @@ export class Entity {
 
   public color?: string;
 
+  public deleted = false;
+
   // public nextPosition!: Vector;
 
   // Shapes local to the the entity
@@ -39,6 +45,8 @@ export class Entity {
   public worldShapes: Shape[] = [];
   public collisionTypes: Record<string, Shape[]> = {};
   public signalTypes: Record<string, Shape[]> = {};
+
+  public collidingCallback?: (entity: Entity, intersection: Intersection) => CollidingResolution;
 
   // The radius (not squared) for the entity's shapes
   public boundingRadius!: number;
@@ -107,6 +115,8 @@ export class Entity {
     entity.maxSpeed = input.maxSpeed ?? entity.maxSpeed;
 
     entity.color = input.color;
+
+    entity.collidingCallback = input.colliding;
 
     (input.shapes ?? []).forEach(shape => entity.addShape(shape));
 
@@ -213,6 +223,15 @@ export class Entity {
   public getSurfaceArea(): number {
     return this.shapes[0].shape.area;
   }
+
+  public colliding(entity: Entity, intersection: Intersection): string {
+    return this.collidingCallback?.call(this, entity, intersection) ?? 'collide';
+  }
+
+  // public collided(entity: Entity, intersection: Intersection): string {
+  //   // console.log(this, 'collided with', entity, intersection);
+  //   return 'collide';
+  // }
 
   private _updateShapes(): void {
     this.collisionTypes = {};

@@ -37,9 +37,9 @@ export class Force {
   }
 
   public update(deltaTime: number, now: number) {
-    if (this.name === 'gravity') {
-      console.log('Force', this.magnitude);
-    }
+    // if (this.name === 'gravity') {
+    //   console.log('Force', this.magnitude);
+    // }
     if (this.duration !== 0 && this.duration !== Infinity) {
       if (this.startTime == null) {
         this.startTime = now;

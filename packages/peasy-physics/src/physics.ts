@@ -181,6 +181,10 @@ export class Physics {
         stats.collisionCandidates++;
 
         for (const entity of mover.near) {
+          if (entity.deleted) {
+            mover.near.delete(entity);
+            break;
+          }
           if (!checked.has(entity)) {
             checked.set(entity, new Set<Entity>());
           }
@@ -261,6 +265,34 @@ export class Physics {
           //   console.log('Intersection', mover.color, '=>', entity.color, intersection);
           // }
 
+          const moverResolve = mover.colliding(entity, intersection);
+          const entityResolve = entity.colliding(mover, intersection);
+
+          let noCollision = false;
+          if (moverResolve === 'remove') {
+            mover.deleted = true;
+            Physics.removeEntities(mover);
+            moving.delete(mover);
+            const index = movers.indexOf(mover);
+            if (index > -1) {
+              movers.splice(index, 1);
+            }
+            noCollision = true;
+          }
+          if (entityResolve === 'remove') {
+            entity.deleted = true;
+            Physics.removeEntities(entity);
+            moving.delete(entity);
+            const index = movers.indexOf(entity);
+            if (index > -1) {
+              movers.splice(index, 1);
+            }
+            noCollision = true;
+          }
+          if (noCollision) {
+            break;
+          }
+
           const moverData: { mass?: number; direction?: Vector; speed?: number } = {};
           if (mover.mass !== 0) {
             moverData.mass = mover.mass;
@@ -306,6 +338,9 @@ export class Physics {
           } else {
             moving.delete(entity);
           }
+
+          // mover.collided(entity, intersection);
+          // entity.collided(mover, intersection);
         }
       }
 
