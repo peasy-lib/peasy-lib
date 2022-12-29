@@ -224,7 +224,7 @@ export class Entity {
     return this.shapes[0].shape.area;
   }
 
-  public colliding(entity: Entity, intersection: Intersection): string {
+  public colliding(entity: Entity, intersection: Intersection): CollidingResolution {
     return this.collidingCallback?.call(this, entity, intersection) ?? 'collide';
   }
 
