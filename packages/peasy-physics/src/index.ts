@@ -1,6 +1,6 @@
 export { Physics } from './physics';
 
-export { Entity } from './entity';
+export { Entity, IEntity, CollidingResolution } from './entity';
 
 export { Force } from './force';
 
