@@ -116,8 +116,13 @@ export class Force {
     return Force.create({
       name: 'gravity',
       duration: Infinity,
-      direction: options.direction,
-      magnitude: options.G * 10000,
+      // direction: options.direction,
+      // magnitude: options.G * 10000,
+      callback: (force: Force, entity: Entity): Vector => function (force: Force, entity: Entity, options: IGravityOptions) {
+        // console.log('FORCE', force.name, entity, density, coefficient);
+        // const velocity = entity.velocity.normalize();
+        return entity.mass !== 0 ? options.direction!.multiply(options.G!) : new Vector();
+      }(force, entity, options)
     });
   }
 }

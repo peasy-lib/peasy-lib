@@ -108,6 +108,11 @@ async function main(): Promise<void> {
 
   canvas = new Canvas(model.canvas);
   Physics.initialize({
+    collisions: {
+      rect: ['circle', 'stadium'],
+      circle: ['rect', 'stadium'],
+      stadium: ['rect', 'circle', 'stadium'],
+    },
     ctx: model.canvas.getContext('2d'),
     showAreas: false,
     // resolver: 'spatial-hash-grid',
@@ -438,8 +443,8 @@ const points = {
   rectangles: 0,
 };
 function setupEntities() {
-  Physics.addForce(Force.Drag({ density: 1, coefficient: 0.01 }));
-  Physics.addForce(Force.Gravity({ G: 50 }));
+  // Physics.addForce(Force.Drag({ density: 1, coefficient: 0.01 }));
+  // Physics.addForce(Force.Gravity({ G: 50 }));
 
   // Physics.addForce({
   //   name: 'drag',
@@ -464,15 +469,18 @@ function setupEntities() {
       radius: undefined,
       size: undefined,
       alignment: undefined,
+      types: undefined,
     };
     switch (randomInt(1, 4)) {
       case 1:
         shape.radius = random(25 / sizeFactor, 50 / sizeFactor);
+        shape.types = ['circle'];
         // shape = new Circle(new Vector(), random(25, 50));
         break;
       case 2:
         shape.size = new Vector(random(10 / sizeFactor, 100 / sizeFactor), random(10 / sizeFactor, 100 / sizeFactor));
         // shape = new Rect(new Vector(), new Vector(random(10, 100), random(10, 100)));
+        shape.types = ['rect'];
         break;
       case 3: {
         const alignment = random(0, 1) < 0.5 ? 'horizontal' : 'vertical';
@@ -485,6 +493,7 @@ function setupEntities() {
         shape.size = size;
         shape.alignment = alignment;
         // shape = new Stadium(new Vector(), size, alignment);
+        shape.types = ['stadium'];
         break;
       }
     }
@@ -507,8 +516,8 @@ function setupEntities() {
       if (this === intersection.mover) {
         return 'collide';
       }
-      const thisShape = this.shapes[0].shape;
-      const entityShape = entity.shapes[0].shape;
+      const thisShape = intersection.moverShape.shape;
+      const entityShape = intersection.entityShape.shape;
       if (
         (thisShape instanceof Circle && entityShape instanceof Rect) ||
         (thisShape instanceof Rect && entityShape instanceof Circle)

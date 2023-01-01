@@ -7,7 +7,8 @@ import { Intersection } from './intersection';
 
 export type CollidingResolution = 'collide' | 'remove';
 
-export interface IEntity extends Omit<Partial<Entity>, 'position' | 'colliding'> {
+export interface IEntity extends Omit<Partial<Entity>, 'position' | 'shapes' | 'colliding'> {
+  shapes?: (IShape | Shape)[];
   position?: IVector;
   colliding?: (entity: Entity, intersection: Intersection) => CollidingResolution;
 }
@@ -104,7 +105,8 @@ export class Entity {
   public static create(input: IEntity): Entity {
     const entity = new Entity();
 
-    entity.entity = (input as IEntity).entity ?? input as IExternalEntity;
+    entity.entity = input.entity ?? input as IExternalEntity;
+    (entity.entity as any).physics = entity;
 
     entity.position = new Vector(entity.entity.position.x, entity.entity.position.y);
     entity.orientation = input.orientation ?? entity._orientation;
@@ -121,6 +123,23 @@ export class Entity {
     (input.shapes ?? []).forEach(shape => entity.addShape(shape));
 
     return entity;
+  }
+
+  public update(deltaTime: number, now: number): boolean {
+    if (!this.applyForces(deltaTime, now)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  public updateEntity(): void {
+    if (this.position.x !== this.entity.position.x) {
+      this.entity.position.x = this.position.x;
+    }
+    if (this.position.y !== this.entity.position.y) {
+      this.entity.position.y = this.position.y;
+    }
   }
 
   public addForce(force: Force | IForce) {
@@ -242,13 +261,17 @@ export class Entity {
           if (this.collisionTypes[type] == null) {
             this.collisionTypes[type] = [];
           }
-          this.collisionTypes[type].push(shape);
+          if (!this.collisionTypes[type].includes(shape)) {
+            this.collisionTypes[type].push(shape);
+          }
         }
         if (Physics.signals[type] != null) {
           if (this.signalTypes[type] == null) {
             this.signalTypes[type] = [];
           }
-          this.signalTypes[type].push(shape);
+          if (!this.signalTypes[type].includes(shape)) {
+            this.signalTypes[type].push(shape);
+          }
         }
       }
     }

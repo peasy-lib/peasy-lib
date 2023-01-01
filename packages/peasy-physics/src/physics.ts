@@ -21,7 +21,8 @@ export class Physics {
   public static entities: Entity[] = [];
   public static forces: Force[] = [];
 
-  public static collisions: Record<string, Record<string, boolean>> = {};
+  // public static collisions: Record<string, Record<string, boolean>> = {};
+  public static collisions: Record<string, string[]> = {};
   public static signals: Record<string, any> = {}; // { signal: { signal: (mover, entity, event, collision) => console.log(`Signalling '${event}' from`, mover, entity, collision) }, },
 
   private static _proximityResolver: any;
@@ -37,18 +38,23 @@ export class Physics {
     const collisions = input.collisions ?? { collision: ['collision'] };
     const signals = input.signals ?? {};
 
+    const physicsCollisions: Record<string, Record<string, boolean>> = {};
     for (const collision in collisions) {
       for (const opposite of collisions[collision]) {
-        if (Physics.collisions[collision] == null) {
-          Physics.collisions[collision] = {};
+        if (physicsCollisions[collision] == null) {
+          physicsCollisions[collision] = {};
         }
-        Physics.collisions[collision][opposite] = true;
-        if (Physics.collisions[opposite] == null) {
-          Physics.collisions[opposite] = {};
+        physicsCollisions[collision][opposite] = true;
+        if (physicsCollisions[opposite] == null) {
+          physicsCollisions[opposite] = {};
         }
-        Physics.collisions[opposite][collision] = true;
+        physicsCollisions[opposite][collision] = true;
       }
     }
+    for (const type in physicsCollisions) {
+      Physics.collisions[type] = Object.keys(physicsCollisions[type]);
+    }
+
     if (input.ctx != null) {
       Physics.canvas = new Canvas(input.ctx);
       Physics.showAreas = input.showAreas ?? Physics.showAreas;
@@ -96,7 +102,7 @@ export class Physics {
 
     const moving = new Set<Entity>();
     const movers = this.entities.filter(mover => {
-      if (!mover.applyForces(deltaTime, now)) {
+      if (!mover.update(deltaTime, now)) {
         return false;
       }
       mover.prepareMovement(deltaTime, now);
@@ -204,23 +210,35 @@ export class Physics {
           const movements = mover.velocity.multiply(moveTime).subtract((entity.velocity ?? new Vector()).multiply(moveTime));
           const movement = new Ray(mover.position, movements.normalize(), movements.magnitude);
 
-          const currentShape = mover.shapes[0].worldShape.shape;
-          const entityShape = entity.shapes[0].worldShape.shape;
-          const swept = currentShape.getSweptShape(entityShape);
-          // canvas.drawShape(swept, 'green');
-          const intersection = movement.getIntersection(swept);
-          if (intersection.intersects) {
-            intersection.mover = mover;
-            intersection.entity = entity;
-            // console.log('intersects', intersection); // This is very useful for debugging!
-            // if (intersection.time === 0) {
-            //   intersections = [intersection];
-            //   break;
-            // } else
-            if (intersection.time === intersections[0].time) {
-              intersections.push(intersection);
-            } else if (intersection.time < intersections[0].time) {
-              intersections = [intersection];
+          // for (const moverWorldShape of mover.worldShapes) {
+          //   for (const entityWorldShape of entity.worldShapes) {
+          for (const moverShape of mover.shapes) {
+            for (const entityShape of entity.shapes) {
+              if (!moverShape.collisions.some(type => entityShape.types.includes(type))) {
+                continue;
+              }
+
+              const moverShapeShape = moverShape.worldShape.shape;
+              const entityShapeShape = entityShape.worldShape.shape;
+              const swept = moverShapeShape.getSweptShape(entityShapeShape);
+              // canvas.drawShape(swept, 'green');
+              const intersection = movement.getIntersection(swept);
+              if (intersection.intersects) {
+                intersection.mover = mover;
+                intersection.entity = entity;
+                intersection.moverShape = moverShape;
+                intersection.entityShape = entityShape;
+                // console.log('intersects', intersection); // This is very useful for debugging!
+                // if (intersection.time === 0) {
+                //   intersections = [intersection];
+                //   break;
+                // } else
+                if (intersection.time === intersections[0].time) {
+                  intersections.push(intersection);
+                } else if (intersection.time < intersections[0].time) {
+                  intersections = [intersection];
+                }
+              }
             }
           }
         }
@@ -328,6 +346,7 @@ export class Physics {
           if (mover.prepareMovement(remainingTime, now)) {
             moving.add(mover);
           } else {
+            mover.updateEntity();
             moving.delete(mover);
           }
           if (entity.mass !== 0) {
@@ -336,6 +355,7 @@ export class Physics {
           if (entity.prepareMovement(remainingTime, now)) {
             moving.add(entity);
           } else {
+            entity.updateEntity();
             moving.delete(entity);
           }
 
@@ -348,214 +368,216 @@ export class Physics {
         break;
       }
     }
+    moving.forEach(mover => mover.updateEntity());
+
     stats.time = performance.now() - start;
     return stats;
   }
 
-  public static update_WORKING(deltaTime: number, now: number) {
-    const friction = 1; // 0.9835;
+  // public static update_WORKING(deltaTime: number, now: number) {
+  //   const friction = 1; // 0.9835;
 
-    const movers = [];
-    for (let i = 0, ii = this.entities.length; i < ii; i++) {
-      const mover = this.entities[i];
-      if (!mover.applyForces(deltaTime, now)) {
-        continue;
-      }
-      mover.prepareMovement(deltaTime, now);
-      movers.push(mover);
-      mover.near.clear();
-      for (let j = i + 1, jj = this.entities.length; j < jj; j++) {
-        const entity = this.entities[j];
-        if (entity.position == null) {
-          continue;
-        }
-        const distance = entity.position.subtract(mover.position).magnitude;
-        if (mover.movementRadius + entity.movementRadius < distance * distance) {
-          console.log('skipping');
-          continue;
-        }
-        mover.near.add(entity);
-        entity.near.add(mover);
-      }
-    }
-    // const movers = this.entities.filter(entity => {
-    //   // Returns false if we're not actually a positioned entity
-    //   if (!entity.applyForces(deltaTime, now)) {
-    //     return false;
-    //   }
-    //   entity.prepareMovement(deltaTime, now);
+  //   const movers = [];
+  //   for (let i = 0, ii = this.entities.length; i < ii; i++) {
+  //     const mover = this.entities[i];
+  //     if (!mover.applyForces(deltaTime, now)) {
+  //       continue;
+  //     }
+  //     mover.prepareMovement(deltaTime, now);
+  //     movers.push(mover);
+  //     mover.near.clear();
+  //     for (let j = i + 1, jj = this.entities.length; j < jj; j++) {
+  //       const entity = this.entities[j];
+  //       if (entity.position == null) {
+  //         continue;
+  //       }
+  //       const distance = entity.position.subtract(mover.position).magnitude;
+  //       if (mover.movementRadius + entity.movementRadius < distance * distance) {
+  //         console.log('skipping');
+  //         continue;
+  //       }
+  //       mover.near.add(entity);
+  //       entity.near.add(mover);
+  //     }
+  //   }
+  //   // const movers = this.entities.filter(entity => {
+  //   //   // Returns false if we're not actually a positioned entity
+  //   //   if (!entity.applyForces(deltaTime, now)) {
+  //   //     return false;
+  //   //   }
+  //   //   entity.prepareMovement(deltaTime, now);
 
-    //   // entity.velocity.multiply(friction, true);
-    //   // if (entity.velocity.magnitude < 0.5) {
-    //   //   entity.velocity = new Vector(0, 0);
-    //   // }
+  //   //   // entity.velocity.multiply(friction, true);
+  //   //   // if (entity.velocity.magnitude < 0.5) {
+  //   //   //   entity.velocity = new Vector(0, 0);
+  //   //   // }
 
-    //   return true;
-    // });
+  //   //   return true;
+  //   // });
 
-    let remainingTime = deltaTime;
-    const moving = new Set<Entity>();
-    while (remainingTime > 0.0001) {
-      let moveTime = remainingTime;
-      let intersections = [new Intersection()];
-      const checks = new WeakMap<Entity, Set<Entity>>();
-      // let firstIntersection = new Intersection();
+  //   let remainingTime = deltaTime;
+  //   const moving = new Set<Entity>();
+  //   while (remainingTime > 0.0001) {
+  //     let moveTime = remainingTime;
+  //     let intersections = [new Intersection()];
+  //     const checks = new WeakMap<Entity, Set<Entity>>();
+  //     // let firstIntersection = new Intersection();
 
-      for (const mover of movers) {
-        if (mover.speed === 0) {
-          continue;
-        }
-        // const velocity = mover.velocity;
-        // if (velocity.zero) {
-        //   continue;
-        // }
-        moving.add(mover);
+  //     for (const mover of movers) {
+  //       if (mover.speed === 0) {
+  //         continue;
+  //       }
+  //       // const velocity = mover.velocity;
+  //       // if (velocity.zero) {
+  //       //   continue;
+  //       // }
+  //       moving.add(mover);
 
-        // if (!checks.has(mover)) {
-        //   checks.set(mover, new Set<Entity>());
-        // }
-        // checks.get(mover)?.add(mover);
+  //       // if (!checks.has(mover)) {
+  //       //   checks.set(mover, new Set<Entity>());
+  //       // }
+  //       // checks.get(mover)?.add(mover);
 
-        console.log('Checking near', mover.near.size);
-        // for (const entity of Physics.entities) {
-        for (const entity of mover.near) {
-          // if (!checks.has(entity)) {
-          //   checks.set(entity, new Set<Entity>());
-          // }
-          // if (checks.get(mover)?.has(entity)) {
-          //   // console.log('skipping same', entity === mover);
-          //   continue;
-          // }
-          // checks.get(entity)?.add(mover);
-          entity.near.delete(mover);
+  //       console.log('Checking near', mover.near.size);
+  //       // for (const entity of Physics.entities) {
+  //       for (const entity of mover.near) {
+  //         // if (!checks.has(entity)) {
+  //         //   checks.set(entity, new Set<Entity>());
+  //         // }
+  //         // if (checks.get(mover)?.has(entity)) {
+  //         //   // console.log('skipping same', entity === mover);
+  //         //   continue;
+  //         // }
+  //         // checks.get(entity)?.add(mover);
+  //         entity.near.delete(mover);
 
-          const movements = mover.velocity.multiply(moveTime).subtract((entity.velocity ?? new Vector()).multiply(moveTime));
-          const movement = new Ray(mover.position, movements.normalize(), movements.magnitude);
+  //         const movements = mover.velocity.multiply(moveTime).subtract((entity.velocity ?? new Vector()).multiply(moveTime));
+  //         const movement = new Ray(mover.position, movements.normalize(), movements.magnitude);
 
-          const currentShape = mover.shapes[0].worldShape.shape;
-          const entityShape = entity.shapes[0].worldShape.shape;
-          const swept = currentShape.getSweptShape(entityShape);
-          // canvas.drawShape(swept, 'green');
-          const intersection = movement.getIntersection(swept);
-          if (intersection.intersects) {
-            intersection.mover = mover;
-            intersection.entity = entity;
-            // console.log('intersects', intersection); // This is very useful for debugging!
-            if (intersection.time === intersections[0].time) {
-              intersections.push(intersection);
-            } else if (intersection.time < intersections[0].time) {
-              intersections = [intersection];
-            }
-          }
+  //         const currentShape = mover.shapes[0].worldShape.shape;
+  //         const entityShape = entity.shapes[0].worldShape.shape;
+  //         const swept = currentShape.getSweptShape(entityShape);
+  //         // canvas.drawShape(swept, 'green');
+  //         const intersection = movement.getIntersection(swept);
+  //         if (intersection.intersects) {
+  //           intersection.mover = mover;
+  //           intersection.entity = entity;
+  //           // console.log('intersects', intersection); // This is very useful for debugging!
+  //           if (intersection.time === intersections[0].time) {
+  //             intersections.push(intersection);
+  //           } else if (intersection.time < intersections[0].time) {
+  //             intersections = [intersection];
+  //           }
+  //         }
 
-          // if (intersection.intersects) {
-          //   // canvas.drawShape(entityShape, 'red');
-          //   if (intersection.time < firstIntersection.time) {
-          //     firstIntersection = intersection;
-          //   }
-          // } else {
-          //   // canvas.drawShape(entityShape, 'purple');
-          // }
-        }
-      }
-      if (intersections[0].intersects) {
-        // console.log('time', intersections[0].time, intersections); // This is very useful for debugging!
-        moveTime = moveTime * intersections[0].time;
-      }
+  //         // if (intersection.intersects) {
+  //         //   // canvas.drawShape(entityShape, 'red');
+  //         //   if (intersection.time < firstIntersection.time) {
+  //         //     firstIntersection = intersection;
+  //         //   }
+  //         // } else {
+  //         //   // canvas.drawShape(entityShape, 'purple');
+  //         // }
+  //       }
+  //     }
+  //     if (intersections[0].intersects) {
+  //       // console.log('time', intersections[0].time, intersections); // This is very useful for debugging!
+  //       moveTime = moveTime * intersections[0].time;
+  //     }
 
-      moving.forEach(mover => {
-        mover.move(moveTime);
-      });
-      remainingTime -= moveTime;
+  //     moving.forEach(mover => {
+  //       mover.move(moveTime);
+  //     });
+  //     remainingTime -= moveTime;
 
-      // Resolve! (but just stop for now)
-      if (intersections[0].intersects) {
-        for (const intersection of intersections) {
-          const mover = intersection.mover!;
-          const entity = intersection.entity!;
-          const tangent = intersection.tangent!;
-          const normal = intersection.normal!;
+  //     // Resolve! (but just stop for now)
+  //     if (intersections[0].intersects) {
+  //       for (const intersection of intersections) {
+  //         const mover = intersection.mover!;
+  //         const entity = intersection.entity!;
+  //         const tangent = intersection.tangent!;
+  //         const normal = intersection.normal!;
 
-          const moverMass = 1;
-          const entityMass = 1;
+  //         const moverMass = 1;
+  //         const entityMass = 1;
 
-          const moverTangent = mover.direction.multiply(mover.speed).dot(tangent);
-          const entityTangent = entity.direction.multiply(entity.speed).dot(tangent);
-          const moverNormal = mover.direction.multiply(mover.speed).dot(normal);
-          const entityNormal = entity.direction.multiply(entity.speed).dot(normal);
+  //         const moverTangent = mover.direction.multiply(mover.speed).dot(tangent);
+  //         const entityTangent = entity.direction.multiply(entity.speed).dot(tangent);
+  //         const moverNormal = mover.direction.multiply(mover.speed).dot(normal);
+  //         const entityNormal = entity.direction.multiply(entity.speed).dot(normal);
 
-          const moverMomentum = (moverNormal * (moverMass - entityMass) + 2 * entityMass * entityNormal) / (moverMass + entityMass);
-          const entityMomentum = (entityNormal * (entityMass - moverMass) + 2 * moverMass * moverNormal) / (moverMass + entityMass);
+  //         const moverMomentum = (moverNormal * (moverMass - entityMass) + 2 * entityMass * entityNormal) / (moverMass + entityMass);
+  //         const entityMomentum = (entityNormal * (entityMass - moverMass) + 2 * moverMass * moverNormal) / (moverMass + entityMass);
 
-          mover.velocity = tangent.multiply(moverTangent).add(normal.multiply(moverMomentum));
-          entity.velocity = tangent.multiply(entityTangent).add(normal.multiply(entityMomentum));
+  //         mover.velocity = tangent.multiply(moverTangent).add(normal.multiply(moverMomentum));
+  //         entity.velocity = tangent.multiply(entityTangent).add(normal.multiply(entityMomentum));
 
-          if (mover.prepareMovement(remainingTime, now)) {
-            moving.add(mover);
-          } else {
-            moving.delete(mover);
-          }
-          if (!entity.prepareMovement(remainingTime, now)) {
-            moving.add(entity);
-          } else {
-            moving.delete(entity);
-          }
-        }
-      }
+  //         if (mover.prepareMovement(remainingTime, now)) {
+  //           moving.add(mover);
+  //         } else {
+  //           moving.delete(mover);
+  //         }
+  //         if (!entity.prepareMovement(remainingTime, now)) {
+  //           moving.add(entity);
+  //         } else {
+  //           moving.delete(entity);
+  //         }
+  //       }
+  //     }
 
-      if (moving.size === 0) {
-        break;
-      }
+  //     if (moving.size === 0) {
+  //       break;
+  //     }
 
-      // if (firstIntersection.intersects) {
-      //   // canvas.drawShape(new Circle(firstIntersection.point, 10), 'red');
-      //   // canvas.drawShape(new Line(firstIntersection.point, firstIntersection.point.add(firstIntersection.normal.multiply(15))), 'red');
-      //   // canvas.drawShape(new Line(firstIntersection.point, firstIntersection.point.add(firstIntersection.tangent.multiply(15))), 'black');
+  //     // if (firstIntersection.intersects) {
+  //     //   // canvas.drawShape(new Circle(firstIntersection.point, 10), 'red');
+  //     //   // canvas.drawShape(new Line(firstIntersection.point, firstIntersection.point.add(firstIntersection.normal.multiply(15))), 'red');
+  //     //   // canvas.drawShape(new Line(firstIntersection.point, firstIntersection.point.add(firstIntersection.tangent.multiply(15))), 'black');
 
-      //   // if (Array.isArray(firstIntersection.shapes)) {
-      //   //   firstIntersection.shapes.forEach(shape => canvas.drawShape(shape, 'red'));
-      //   // }
+  //     //   // if (Array.isArray(firstIntersection.shapes)) {
+  //     //   //   firstIntersection.shapes.forEach(shape => canvas.drawShape(shape, 'red'));
+  //     //   // }
 
-      //   nextPosition = mover.position.add(movement.directionVector.multiply(movement.magnitude * firstIntersection.time));
-      // }
+  //     //   nextPosition = mover.position.add(movement.directionVector.multiply(movement.magnitude * firstIntersection.time));
+  //     // }
 
-      for (const mover of movers) {
-        mover.position.add([1100, 1100], true).modulus(1100, true);
+  //     for (const mover of movers) {
+  //       mover.position.add([1100, 1100], true).modulus(1100, true);
 
-        const shape = mover.shapes[0].worldShape.shape;
-        if (shape.position.x < 0) {
-          mover.velocity.x = -mover.velocity.x;
-        } else if (shape.position.x > 1100) {
-          mover.velocity.x = -mover.velocity.x;
-        }
-        if (shape.position.y < 0) {
-          mover.velocity.y = -mover.velocity.y;
-        } else if (shape.position.y > 1100) {
-          mover.velocity.y = -mover.velocity.y;
-        }
+  //       const shape = mover.shapes[0].worldShape.shape;
+  //       if (shape.position.x < 0) {
+  //         mover.velocity.x = -mover.velocity.x;
+  //       } else if (shape.position.x > 1100) {
+  //         mover.velocity.x = -mover.velocity.x;
+  //       }
+  //       if (shape.position.y < 0) {
+  //         mover.velocity.y = -mover.velocity.y;
+  //       } else if (shape.position.y > 1100) {
+  //         mover.velocity.y = -mover.velocity.y;
+  //       }
 
-        // const shape = mover.shapes[0].shape;
-        // const halfWidth = shape.size.half.x;
-        // const halfHeight = shape.size.half.y;
-        // if (nextPosition.x - halfWidth < 0) {
-        //   nextPosition.x = halfWidth;
-        //   velocity.x = -velocity.x;
-        // } else if (nextPosition.x + halfWidth > 1000) {
-        //   nextPosition.x = 1000 - halfWidth;
-        //   velocity.x = -velocity.x;
-        // }
-        // if (nextPosition.y - halfHeight < 0) {
-        //   nextPosition.y = halfHeight;
-        //   velocity.y = -velocity.y;
-        // } else if (nextPosition.y + halfHeight > 1000) {
-        //   nextPosition.y = 1000 - halfHeight;
-        //   velocity.y = -velocity.y;
-        // }
-      }
-      // mover.moveTo(nextPosition);
+  //       // const shape = mover.shapes[0].shape;
+  //       // const halfWidth = shape.size.half.x;
+  //       // const halfHeight = shape.size.half.y;
+  //       // if (nextPosition.x - halfWidth < 0) {
+  //       //   nextPosition.x = halfWidth;
+  //       //   velocity.x = -velocity.x;
+  //       // } else if (nextPosition.x + halfWidth > 1000) {
+  //       //   nextPosition.x = 1000 - halfWidth;
+  //       //   velocity.x = -velocity.x;
+  //       // }
+  //       // if (nextPosition.y - halfHeight < 0) {
+  //       //   nextPosition.y = halfHeight;
+  //       //   velocity.y = -velocity.y;
+  //       // } else if (nextPosition.y + halfHeight > 1000) {
+  //       //   nextPosition.y = 1000 - halfHeight;
+  //       //   velocity.y = -velocity.y;
+  //       // }
+  //     }
+  //     // mover.moveTo(nextPosition);
 
-    }
-  }
+  //   }
+  // }
 
   public static addForce(force: Force | IForce) {
     if (!(force instanceof Force)) {
@@ -584,7 +606,7 @@ export class Physics {
       if (entity.position != null) {
         Physics._proximityResolver.addEntity(entity);
       }
-      console.log('addEntities map', entity);
+      console.log('addEntities mapped', entity);
       return entity;
     });
   }

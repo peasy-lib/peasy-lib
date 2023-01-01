@@ -1,14 +1,15 @@
 import { Circle } from './circle';
 import { Entity } from './entity';
+import { Physics } from './physics';
 import { Rect } from './rect';
 import { Stadium, StadiumAlignment } from './stadium';
 import { Vector } from './vector';
 
 export interface IShape extends Partial<Omit<Shape, 'shape'>> {
-  entity: Entity;
+  entity?: Entity;
   shape?: 'rect' | 'circle' | 'stadium';
   position?: number[] | Vector;
-  size?: number[];
+  size?: number[] | { x: number; y: number };
   alignment?: StadiumAlignment;
   orientation?: number;
   radius?: number;
@@ -26,6 +27,9 @@ export class Shape {
   public localShape?: Shape;
 
   // private #worldShape: Shape;
+
+  private _collisions?: string[];
+  private _signals?: string[];
 
   public constructor(public entity: Entity) { }
 
@@ -47,6 +51,19 @@ export class Shape {
 
   public get renderPosition(): Vector {
     return this.shape.size.negHalf.add(this.shape.position);
+  }
+
+  public get collisions(): string[] {
+    if (this._collisions == null) {
+      this._collisions = this.types.flatMap(type => Physics.collisions[type]);
+    }
+    return this._collisions;
+  }
+  public get signals(): string[] {
+    if (this._signals == null) {
+      this._signals = this.types.flatMap(type => Physics.signals[type]);
+    }
+    return this._signals;
   }
 
   public static create(entity: Entity, input: IShape): Shape {
