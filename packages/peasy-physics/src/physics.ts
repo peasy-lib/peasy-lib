@@ -288,8 +288,7 @@ export class Physics {
 
           let noCollision = false;
           if (moverResolve === 'remove') {
-            mover.deleted = true;
-            Physics.removeEntities(mover);
+            mover.remove();
             moving.delete(mover);
             const index = movers.indexOf(mover);
             if (index > -1) {
@@ -298,8 +297,7 @@ export class Physics {
             noCollision = true;
           }
           if (entityResolve === 'remove') {
-            entity.deleted = true;
-            Physics.removeEntities(entity);
+            entity.remove();
             moving.delete(entity);
             const index = movers.indexOf(entity);
             if (index > -1) {

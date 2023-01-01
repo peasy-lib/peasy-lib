@@ -252,6 +252,11 @@ export class Entity {
   //   return 'collide';
   // }
 
+  public remove(): void {
+    this.deleted = true;
+    Physics.removeEntities(this);
+  }
+
   private _updateShapes(): void {
     this.collisionTypes = {};
     this.signalTypes = {};
