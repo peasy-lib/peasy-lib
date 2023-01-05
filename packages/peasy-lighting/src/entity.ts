@@ -9,6 +9,7 @@ export interface IExternalEntity {
   position: IVector;
   size: IVector;
   orientation?: number;
+  scale?: string;
   zIndex?: number;
   offset?: IVector;
 }
@@ -24,6 +25,7 @@ export class Entity {
   public updates: Record<string, number> = {
     position: 0,
     orientation: 0,
+    scale: 0,
     zIndex: 0,
     size: 0,
     offset: 0,
@@ -31,6 +33,7 @@ export class Entity {
 
   #position: Vector;
   #orientation = 0;
+  private _scale = '1';
   #zIndex = 0;
   public normalMap!: string;
   #size: Vector = new Vector();
@@ -94,6 +97,18 @@ export class Entity {
     this.version++;
   }
 
+  public get scale(): string {
+    return this._scale;
+  }
+  public set scale(value: string) {
+    if (this._scale === value) {
+      return;
+    }
+    this._scale = value;
+    this.updates.scale++;
+    this.version++;
+  }
+
   public get zIndex(): number {
     return this.#zIndex;
   }
@@ -150,6 +165,7 @@ export class Entity {
     entity.id = (input as IEntity).id as string;
     entity.position = new Vector(entity.entity.position.x, entity.entity.position.y);
     entity.orientation = input.orientation ?? entity.#orientation;
+    entity.scale = input.scale ?? entity._scale;
     entity.zIndex = input.zIndex ?? entity.#zIndex;
     entity.normalMap = (input as IEntity).normalMap ?? entity.normalMap;
     entity.size = new Vector(entity.entity.position.x, entity.entity.position.y);
@@ -161,8 +177,15 @@ export class Entity {
   public update(): void {
     this.position = this.entity.position;
     this.size = this.entity.size;
-    this.orientation = this.entity.orientation ?? 0;
-    this.zIndex = this.entity.zIndex ?? 0;
+    if (this.entity.orientation != null) {
+      this.orientation = this.entity.orientation;
+    }
+    if (this.entity.scale != null) {
+      this.scale = this.entity.scale;
+    }
+    if (this.entity.zIndex != null) {
+      this.zIndex = this.entity.zIndex;
+    }
     if (this.entity.offset != null) {
       this.offset = this.entity.offset;
     }

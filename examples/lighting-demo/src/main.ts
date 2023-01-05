@@ -23,7 +23,7 @@ async function main(): Promise<void> {
       ">
         <div class="static-ship"></div>
         <div class="ship"></div>
-        <div class="ship2"></div>
+        <div class="ship2" style="scale: 150%;"></div>
         <div class="asteroid"></div>
 
         <!--
@@ -130,7 +130,7 @@ async function main(): Promise<void> {
   ship = new Entity({ x: 200, y: 200 }, { x: 64, y: 64 });
   ship.element = document.querySelector('.ship');
 
-  ship2 = new Entity({ x: 400, y: 250 }, { x: 64, y: 64 }, 0, 1);
+  ship2 = new Entity({ x: 400, y: 250 }, { x: 64, y: 64 }, 0, '150%', 1);
   ship2.element = document.querySelector('.ship2');
 
   asteroid = new Entity({ x: 100, y: 100 }, { x: 128, y: 128 });

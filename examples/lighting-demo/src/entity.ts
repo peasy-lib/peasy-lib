@@ -12,6 +12,7 @@ export class Entity {
     public position: IVector,
     public size: IVector,
     public orientation = 0,
+    public scale = '100%',
     public zIndex = 0,
   ) { }
 

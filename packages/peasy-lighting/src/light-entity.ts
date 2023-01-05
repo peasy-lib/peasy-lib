@@ -26,6 +26,7 @@ export class LightEntity {
     entity: {
       position: 0,
       orientation: 0,
+      scale: 0,
       zIndex: 0,
       size: 0,
       offset: 0,
@@ -115,6 +116,9 @@ export class LightEntity {
     } else if (entityUpdates.orientation !== entity.updates.orientation) {
       updated.push('orientation');
     }
+    if (entityUpdates.scale !== entity.updates.scale) {
+      updated.push('scale');
+    }
     if (entityUpdates.offset !== entity.updates.offset) {
       updated.push('offset');
     }
@@ -175,6 +179,11 @@ export class LightEntity {
           entityUpdates.orientation = entity.updates.orientation;
           break;
         }
+        case 'scale':
+          this.#element.style.scale = entity.scale;
+
+          entityUpdates.scale = entity.updates.scale;
+          break;
         case 'offset':
           this.#redNormal.style.backgroundPosition = `${entity.offset.x}px ${entity.offset.y}px`;
           this.#greenNormal.style.backgroundPosition = `${entity.offset.x}px ${entity.offset.y}px`;
@@ -202,6 +211,7 @@ export class LightEntity {
         /* mix-blend-mode: multiply; */
         width: ${entity.size.x}px;
         height: ${entity.size.x}px;
+        scale: ${entity.scale};
       ">
         <div style="
           position: absolute;
