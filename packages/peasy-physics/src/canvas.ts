@@ -1,4 +1,5 @@
 import { Circle } from './circle';
+import { ExpandedRect } from './expanded-rect';
 import { Line } from './line';
 import { Polygon } from './polygon';
 import { Ray } from './ray';
@@ -82,6 +83,43 @@ export class Canvas {
       ctx.stroke();
 
       this.drawCross(shape.position, color, 2);
+    } else if (shape instanceof ExpandedRect) {
+      const { min } = shape.corner.getMinMax();
+      let top = new Vector(-Infinity, Infinity);
+      for (const vertex of shape.corner.vertices) {
+        if (vertex.y < top.y) {
+          top = vertex;
+        }
+      }
+      const shift = top.subtract(min);
+
+      ctx.beginPath();
+      const vertices = shape.vertices;
+      for (let i = 0; i < vertices.length; i++) {
+        ctx.lineTo(vertices[i].x, vertices[i].y);
+      }
+      ctx.lineTo(vertices[0].x, vertices[0].y);
+      // ctx.rect(shape.left, shape.top, shape.width, shape.height);
+      if (fillColor != null) {
+        ctx.fill();
+      }
+      ctx.stroke();
+
+      this.drawCross(shape.position, color, 2);
+
+      // ctx.beginPath();
+      // ctx.arc(shape.left + r, shape.top + r, r, Math.PI * -0.5, Math.PI, true);
+      // ctx.lineTo(shape.left, shape.bottom - r);
+      // ctx.arc(shape.left + r, shape.bottom - r, r, Math.PI, Math.PI * 0.5, true);
+      // ctx.lineTo(shape.right - r, shape.bottom);
+      // ctx.arc(shape.right - r, shape.bottom - r, r, Math.PI * 0.5, 0, true);
+      // ctx.lineTo(shape.right, shape.top + r);
+      // ctx.arc(shape.right - r, shape.top + r, r, 0, -Math.PI * 0.5, true);
+      // ctx.lineTo(shape.left + r, shape.top);
+      // if (fillColor != null) {
+      //   ctx.fill();
+      // }
+      // ctx.stroke();
     } else if (shape instanceof Rect || shape instanceof Polygon) {
       ctx.beginPath();
       const vertices = shape.vertices;

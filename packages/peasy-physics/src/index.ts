@@ -21,6 +21,8 @@ export { Stadium } from './stadium';
 
 export { RoundedRect } from './rounded-rect';
 
+export { ExpandedRect } from './expanded-rect';
+
 export { Ray } from './ray';
 
 export { Intersection } from './intersection';

@@ -1,4 +1,5 @@
 import { Circle } from './circle';
+import { ExpandedRect } from './expanded-rect';
 import { Point } from './point';
 import { RoundedRect } from './rounded-rect';
 import { Stadium } from './stadium';
@@ -184,7 +185,7 @@ export class Rect {
       this.bottom > target.bottom);
   }
 
-  public getSweptShape(target: Rect | Circle | Stadium): Rect | Circle | Stadium | RoundedRect {
+  public getSweptShape(target: Rect | Circle | Stadium): Rect | Circle | Stadium | RoundedRect | ExpandedRect{
     if (target instanceof Stadium) {
       // console.log(this.#size.toString(), ',', target.size.toString(), '=', target.size.add(this.#size).toString());
       const expanded = target.getSweptShape(this);
@@ -195,9 +196,22 @@ export class Rect {
       // return [expanded];
     }
     if (target instanceof Rect) {
-      const expanded = target.clone();
-      expanded.size.add(this.size, true);
+      if (this.orientation === 0 && target.orientation === 0) {
+        // const { min, max } = this.getMinMax();
+        const expanded = target.clone();
+        // expanded.size.add(max.subtract(min), true);
+        expanded.size.add(this.size, true);
+        return expanded;
+      }
+      const { min, max } = this.getMinMax();
+      const rotatedSize = max.subtract(min);
+      const slant = rotatedSize.subtract(this.size);
+      const corner = this.clone();
+      corner.position = new Vector();
+      console.log('getSweptShape Rect - Rect', this.orientation, rotatedSize, this.size, this.vertices);
+      const expanded = new ExpandedRect(target.position.clone(), target.size.add(rotatedSize), corner);
       return expanded;
+
     }
     if (target instanceof Circle) {
       const expanded = target.getSweptShape(this);
@@ -207,6 +221,17 @@ export class Rect {
     return this;
   }
 
+  public getMinMax(): { min: Vector, max: Vector } {
+    const min = new Vector();
+    const max = new Vector();
+    const vertices = this.vertices;
+
+    min.x = Math.min(...vertices.map(vertex => vertex.x));
+    min.y = Math.min(...vertices.map(vertex => vertex.y));
+    max.x = Math.max(...vertices.map(vertex => vertex.x));
+    max.y = Math.max(...vertices.map(vertex => vertex.y));
+    return { min, max };
+  }
   public toString(): string {
     return `[${this._position}] (${this._size})`;
   }

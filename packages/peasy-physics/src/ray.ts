@@ -1,3 +1,4 @@
+import { ExpandedRect } from './expanded-rect';
 /* eslint-disable max-lines-per-function */
 import { Circle } from './circle';
 import { Intersection } from './intersection';
@@ -69,7 +70,7 @@ export class Ray {
     this.magnitude = delta.magnitude;
   }
 
-  public getIntersection(shapes: Rect | Circle | Stadium | RoundedRect | (Rect | Circle | Stadium | RoundedRect)[]): Intersection {
+  public getIntersection(shapes: Rect | Circle | Stadium | RoundedRect | ExpandedRect | (Rect | Circle | Stadium | RoundedRect | ExpandedRect)[]): Intersection {
     if (shapes instanceof Stadium) {
       return this.getIntersectionStadium(shapes);
     }

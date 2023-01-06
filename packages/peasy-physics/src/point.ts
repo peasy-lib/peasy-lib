@@ -1,3 +1,4 @@
+import { ExpandedRect } from './expanded-rect';
 import { Circle } from './circle';
 import { Rect } from './rect';
 import { RoundedRect } from './rounded-rect';
@@ -10,7 +11,7 @@ export class Point extends Vector {
     return new Point(vector.x, vector.y, vector.z);
   }
 
-  public within(shape: Rect | Circle | Stadium | RoundedRect): boolean {
+  public within(shape: Rect | Circle | Stadium | RoundedRect | ExpandedRect): boolean {
     if (shape instanceof Rect) {
       return !(this.x < shape.left ||
         this.x > shape.right ||
