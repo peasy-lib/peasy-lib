@@ -1,6 +1,3 @@
-import { Circle } from './circle';
-import { Rect } from './rect';
-import { Stadium } from './stadium';
 import { Vector } from "./vector";
 
 export class RoundedRect {
@@ -136,6 +133,6 @@ export class RoundedRect {
   }
 
   public clone(): RoundedRect {
-    return new RoundedRect(this.position.clone(), this.size.clone(), this.orientation);
+    return new RoundedRect(this.position.clone(), this.size.clone(), this.radius, this.orientation);
   }
 }
