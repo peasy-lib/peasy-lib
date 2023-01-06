@@ -5,7 +5,7 @@ import { IVector, Vector } from "./vector";
 import { Rect } from './rect';
 import { Intersection } from './intersection';
 
-export type CollidingResolution = 'collide' | 'remove';
+export type CollidingResolution = 'collide' | 'remove' | 'ignore';
 
 export interface IEntity extends Omit<Partial<Entity>, 'position' | 'shapes' | 'colliding'> {
   shapes?: (IShape | Shape)[];

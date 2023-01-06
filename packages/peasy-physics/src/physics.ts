@@ -286,6 +286,12 @@ export class Physics {
           const moverResolve = mover.colliding(entity, intersection);
           const entityResolve = entity.colliding(mover, intersection);
 
+          if (moverResolve === 'ignore' || entityResolve === 'ignore') {
+            mover.near.delete(entity);
+            entity.near.delete(mover);
+            continue;
+          }
+
           let noCollision = false;
           if (moverResolve === 'remove') {
             mover.remove();
@@ -306,7 +312,7 @@ export class Physics {
             noCollision = true;
           }
           if (noCollision) {
-            break;
+            break; // TODO: continue?
           }
 
           const moverData: { mass?: number; direction?: Vector; speed?: number } = {};
