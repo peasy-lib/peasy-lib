@@ -1,6 +1,9 @@
-import { Vector } from "./vector";
+import { Circle } from './circle';
+import { Rect } from './rect';
+import { Stadium } from './stadium';
+import { Vector } from "../vector";
 
-export class RoundedRect {
+export class ExpandedRect {
   public worldSpace = false;
 
   private _vertices: Vector[] = [];
@@ -8,7 +11,7 @@ export class RoundedRect {
   public constructor(
     public position: Vector,
     public size: Vector,
-    public radius: number,
+    public corner: Rect,
     public orientation: number = 0,
   ) { }
 
@@ -72,7 +75,7 @@ export class RoundedRect {
     return this._vertices;
   }
 
-  public equals(rect: RoundedRect): boolean {
+  public equals(rect: ExpandedRect): boolean {
     if (!this.position.equals(rect.position) ||
       !this.size.equals(rect.size)
     ) {
@@ -111,7 +114,7 @@ export class RoundedRect {
     this._vertices = [];
   }
 
-  // public getSweptShapes(target: Rect | Circle | Stadium): (Rect | Circle | Stadium | RoundedRect)[] {
+  // public getSweptShapes(target: Rect | Circle | Stadium): (Rect | Circle | Stadium | ExpandedRect)[] {
   //   if (target instanceof Stadium) {
   //     return [];
   //   }
@@ -132,7 +135,7 @@ export class RoundedRect {
     return `[${this.position}] (${this.size})`;
   }
 
-  public clone(): RoundedRect {
-    return new RoundedRect(this.position.clone(), this.size.clone(), this.radius, this.orientation);
+  public clone(): ExpandedRect {
+    return new ExpandedRect(this.position.clone(), this.size.clone(), this.corner.clone(), this.orientation);
   }
 }

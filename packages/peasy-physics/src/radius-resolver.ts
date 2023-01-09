@@ -1,5 +1,5 @@
 import { Canvas } from './canvas';
-import { Circle } from './circle';
+import { Circle } from './shapes/circle';
 import { Entity } from './entity';
 import { Physics } from './physics';
 

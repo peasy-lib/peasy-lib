@@ -1,4 +1,4 @@
-import { Vector } from "./vector";
+import { Vector } from "../vector";
 
 export class Line {
   // public element: SVGLineElement;

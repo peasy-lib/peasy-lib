@@ -3,7 +3,7 @@ import { Circle } from './circle';
 import { Rect } from './rect';
 import { RoundedRect } from './rounded-rect';
 import { Stadium } from './stadium';
-import { Vector } from './vector';
+import { Vector } from '../vector';
 
 export class Point extends Vector {
   public static from(x: number | number[] | Vector | string | { x: number; y: number; z?: number } = 0, y = 0, z = 0): Point {

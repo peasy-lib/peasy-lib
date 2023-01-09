@@ -1,12 +1,12 @@
 import { ExpandedRect } from './expanded-rect';
 /* eslint-disable max-lines-per-function */
 import { Circle } from './circle';
-import { Intersection } from './intersection';
+import { Intersection } from '../intersection';
 import { Line } from './line';
 import { Rect } from './rect';
 import { RoundedRect } from './rounded-rect';
 import { Stadium } from './stadium';
-import { Vector } from "./vector";
+import { Vector } from "../vector";
 
 export class Ray {
   // public element: SVGLineElement;

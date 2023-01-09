@@ -4,7 +4,7 @@ import { GeometricShape } from './geometric-shape';
 import { Point } from './point';
 import { RoundedRect } from './rounded-rect';
 import { Stadium } from './stadium';
-import { Vector } from "./vector";
+import { Vector } from "../vector";
 
 export class Rect {
   public worldSpace = false;

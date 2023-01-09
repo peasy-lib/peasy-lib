@@ -7,22 +7,22 @@ export { Force } from './force';
 
 export { Vector } from './vector';
 
-export { Rect } from './rect';
+export { Rect } from './shapes/rect';
 
-export { Circle } from './circle';
+export { Circle } from './shapes/circle';
 
-export { Line } from './line';
+export { Line } from './shapes/line';
 
-export { Point } from './point';
+export { Point } from './shapes/point';
 
-export { Polygon } from './polygon';
+export { Polygon } from './shapes/polygon';
 
-export { Stadium } from './stadium';
+export { Stadium } from './shapes/stadium';
 
-export { RoundedRect } from './rounded-rect';
+export { RoundedRect } from './shapes/rounded-rect';
 
-export { ExpandedRect } from './expanded-rect';
+export { ExpandedRect } from './shapes/expanded-rect';
 
-export { Ray } from './ray';
+export { Ray } from './shapes/ray';
 
 export { Intersection } from './intersection';

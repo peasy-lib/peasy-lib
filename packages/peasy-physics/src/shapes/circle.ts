@@ -3,7 +3,7 @@ import { Point } from './point';
 import { Rect } from './rect';
 import { RoundedRect } from './rounded-rect';
 import { Stadium } from './stadium';
-import { Vector } from './vector';
+import { Vector } from '../vector';
 
 export class Circle {
   public constructor(

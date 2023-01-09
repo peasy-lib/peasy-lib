@@ -22,6 +22,10 @@ export class Vector {
     return Math.sqrt(this.x * this.x + this.y * this.y);
   }
 
+  public get magnitudeSquared(): number {
+    return this.x * this.x + this.y * this.y;
+  }
+
   public get half(): Vector {
     return this.multiply(0.5);
   }
@@ -82,6 +86,13 @@ export class Vector {
     const deltaVector = delta instanceof Vector ? delta : new Vector(delta, delta, delta);
     vector.x /= deltaVector.x;
     vector.y /= deltaVector.y;
+    return vector;
+  }
+
+  public negate(update = false): Vector {
+    const vector = update ? this : this.clone();
+    vector.x = -this.x;
+    vector.y = -this.y;
     return vector;
   }
 

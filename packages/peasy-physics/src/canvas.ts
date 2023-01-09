@@ -1,11 +1,11 @@
-import { Circle } from './circle';
-import { ExpandedRect } from './expanded-rect';
-import { Line } from './line';
-import { Polygon } from './polygon';
-import { Ray } from './ray';
-import { Rect } from './rect';
-import { RoundedRect } from './rounded-rect';
-import { Stadium } from './stadium';
+import { Circle } from './shapes/circle';
+import { ExpandedRect } from './shapes/expanded-rect';
+import { Line } from './shapes/line';
+import { Polygon } from './shapes/polygon';
+import { Ray } from './shapes/ray';
+import { Rect } from './shapes/rect';
+import { RoundedRect } from './shapes/rounded-rect';
+import { Stadium } from './shapes/stadium';
 import { Vector } from './vector';
 
 export class Canvas {

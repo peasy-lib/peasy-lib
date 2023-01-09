@@ -1,6 +1,6 @@
-import { Circle } from './circle';
+import { Circle } from './shapes/circle';
 import { Entity } from './entity';
-import { Rect } from './rect';
+import { Rect } from './shapes/rect';
 import { Vector } from './vector';
 
 export class QuadTreeResolver {

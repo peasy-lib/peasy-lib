@@ -2,7 +2,7 @@ import { Circle } from './circle';
 import { Point } from './point';
 import { Rect } from './rect';
 import { RoundedRect } from './rounded-rect';
-import { Vector } from './vector';
+import { Vector } from '../vector';
 
 export type StadiumAlignment = 'horizontal' | 'vertical';
 

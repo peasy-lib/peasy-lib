@@ -1,8 +1,8 @@
-import { Circle } from './circle';
+import { Circle } from './shapes/circle';
 import { Entity } from './entity';
 import { Physics } from './physics';
-import { Rect } from './rect';
-import { Stadium, StadiumAlignment } from './stadium';
+import { Rect } from './shapes/rect';
+import { Stadium, StadiumAlignment } from './shapes/stadium';
 import { Vector } from './vector';
 
 export interface IShape extends Partial<Omit<Shape, 'shape'>> {
@@ -42,7 +42,7 @@ export class Shape {
   public get worldShape(): Shape {
     const _worldShape = this.clone();
     (_worldShape.shape as Rect).worldSpace = true;
-    _worldShape.shape.transform(this.entity.position, this.entity.orientation);
+    _worldShape.shape.transform(this.entity.orientation, this.entity.position);
     // _worldShape.shape.orientation += this.entity.orientation;
     // _worldShape.shape.position.add(this.entity.position, true);
     // _worldShape.shape.position.z += this.entity.position.z;
