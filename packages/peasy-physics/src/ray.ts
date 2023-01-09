@@ -263,7 +263,10 @@ export class Ray {
     return firstIntersection;
   }
 
-  // public getIntersectionCircleOld(target: Circle): IIntersection {
+  public clone(): Ray {
+    return new Ray(this.origin.clone(), this.directionVector.clone(), this.magnitude);
+  }
+    // public getIntersectionCircleOld(target: Circle): IIntersection {
   //   // compute the euclidean distance between A and B
   //   // LAB = sqrt((Bx - Ax)²+(By - Ay)²)
 

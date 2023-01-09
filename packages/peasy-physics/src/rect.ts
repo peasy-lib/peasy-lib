@@ -1,5 +1,6 @@
 import { Circle } from './circle';
 import { ExpandedRect } from './expanded-rect';
+import { GeometricShape } from './geometric-shape';
 import { Point } from './point';
 import { RoundedRect } from './rounded-rect';
 import { Stadium } from './stadium';
@@ -109,6 +110,10 @@ export class Rect {
     return this;
   }
 
+  public shapes(): GeometricShape[] {
+    return [];
+  }
+
   public get vertices(): Vector[] {
     if (this._vertices.length > 0) {
       return this._vertices;
@@ -123,7 +128,7 @@ export class Rect {
     const orientation = this._orientation;
     this._position = new Vector(0, 0);
     this._orientation = 0;
-    this.transform(position, orientation);
+    this.transform(orientation, position);
     return this._vertices;
   }
 
@@ -157,7 +162,7 @@ export class Rect {
     this._vertices = vertices;
   }
 
-  public transform(position: Vector, degrees: number): void {
+  public transform(degrees: number, position: Vector): void {
     this.rotate(degrees);
     this.translate(position);
   }
@@ -185,7 +190,7 @@ export class Rect {
       this.bottom > target.bottom);
   }
 
-  public getSweptShape(target: Rect | Circle | Stadium): Rect | Circle | Stadium | RoundedRect | ExpandedRect{
+  public getSweptShape(target: Rect | Circle | Stadium): Rect | Circle | Stadium | RoundedRect | ExpandedRect {
     if (target instanceof Stadium) {
       // console.log(this.#size.toString(), ',', target.size.toString(), '=', target.size.add(this.#size).toString());
       const expanded = target.getSweptShape(this);

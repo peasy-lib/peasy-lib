@@ -102,7 +102,7 @@ export class Stadium {
     const orientation = this.orientation;
     this.position = new Vector(0, 0);
     this.orientation = 0;
-    this.transform(position, orientation);
+    this.transform(orientation, position);
     return this._vertices;
   }
 
@@ -136,7 +136,7 @@ export class Stadium {
     this._vertices = vertices;
   }
 
-  public transform(position: Vector, degrees: number): void {
+  public transform(degrees: number, position: Vector): void {
     this.rotate(degrees);
     this.translate(position);
   }

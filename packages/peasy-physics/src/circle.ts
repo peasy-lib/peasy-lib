@@ -1,3 +1,4 @@
+import { GeometricShape } from './geometric-shape';
 import { Point } from './point';
 import { Rect } from './rect';
 import { RoundedRect } from './rounded-rect';
@@ -43,6 +44,10 @@ export class Circle {
     return new Rect(this.position.clone(), new Vector(this.radius * 2, this.radius * 2));
   }
 
+  public shapes(): GeometricShape[] {
+    return [];
+  }
+
   public get vertices(): Vector[] {
     return [];
   }
@@ -64,7 +69,7 @@ export class Circle {
     this.position.add(position, true);
   }
 
-  public transform(position: Vector, degrees: number): void {
+  public transform(degrees: number, position: Vector): void {
     this.rotate(degrees);
     this.translate(position);
   }
