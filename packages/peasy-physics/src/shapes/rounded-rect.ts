@@ -1,16 +1,20 @@
+import { Box } from '../box';
 import { Vector } from "../vector";
+import { Circle } from './circle';
+import { GeometricShape } from './geometric-shape';
+import { Rect } from './rect';
 
-export class RoundedRect {
+export class RoundedRect extends GeometricShape {
   public worldSpace = false;
 
-  private _vertices: Vector[] = [];
-
   public constructor(
-    public position: Vector,
+    position: Vector,
     public size: Vector,
     public radius: number,
-    public orientation: number = 0,
-  ) { }
+    orientation: number = 0,
+  ) {
+    super(position, orientation);
+  }
 
   public get half(): Vector {
     return this.size.half;
@@ -54,6 +58,28 @@ export class RoundedRect {
     this.size.y = value;
   }
 
+  public get boundingBox(): Box {
+    if (this._orientation === 0 || this._orientation === 180) {
+      return new Box(new Vector(this.left, this.top), new Vector(this.right, this.bottom));
+    }
+    return super.boundingBox;
+  }
+
+  public get shapes(): (Rect | Circle)[] {
+    const r = this.radius;
+    const r2 = r * 2;
+    return [
+      new Circle(new Vector(this.left + r, this.top + r), r),
+      new Circle(new Vector(this.right - r, this.top + r), r),
+
+      new Circle(new Vector(this.right - r, this.bottom - r), r),
+      new Circle(new Vector(this.left + r, this.bottom - r), r),
+
+      new Rect(this.position, this.size.subtract(new Vector(r2, 0))),
+      new Rect(this.position, this.size.subtract(new Vector(0, r2))),
+    ];
+  }
+
   public get vertices(): Vector[] {
     if (this._vertices.length > 0) {
       return this._vertices;
@@ -66,8 +92,8 @@ export class RoundedRect {
     ];
     const position = this.position;
     const orientation = this.orientation;
-    this.position = new Vector(0, 0);
-    this.orientation = 0;
+    this._position = new Vector(0, 0);
+    this._orientation = 0;
     this.transform(orientation, position);
     return this._vertices;
   }
@@ -79,36 +105,6 @@ export class RoundedRect {
       return false;
     }
     return true;
-  }
-
-  public rotate(degrees: number): void {
-    const vertices = this.vertices;
-    if (Math.abs(degrees) !== 0) {
-      vertices.forEach(vertex => vertex.rotate(degrees, true));
-      this.position.rotate(degrees, true);
-      this.orientation += degrees;
-    }
-    this._vertices = vertices;
-    // console.log('orientation', this.orientation);
-    // if (this.orientation < 0) {
-    //   this.rotate(-this.orientation);
-    // }
-  }
-
-  public translate(position: Vector): void {
-    const vertices = this.vertices;
-    vertices.forEach(vertex => vertex.add(position, true));
-    this.position.add(position, true);
-    this._vertices = vertices;
-  }
-
-  public transform(degrees: number, position: Vector): void {
-    this.rotate(degrees);
-    this.translate(position);
-  }
-
-  public resetVertices(): void {
-    this._vertices = [];
   }
 
   // public getSweptShapes(target: Rect | Circle | Stadium): (Rect | Circle | Stadium | RoundedRect)[] {

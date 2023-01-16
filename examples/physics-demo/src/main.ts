@@ -1,7 +1,6 @@
-import { Circle, Line, Physics, Polygon, Ray, Rect, RoundedRect, Stadium, Vector, Intersection, Point, Entity as PhysicsEntity, Force } from '@peasy-lib/peasy-physics';
+import { Canvas, Circle, Line, Physics, Polygon, Ray, Rect, Stadium, Vector, Intersection, Point, Entity as PhysicsEntity, Force, RoundedRect, ExpandedRect } from '@peasy-lib/peasy-physics';
 import { UI } from '@peasy-lib/peasy-ui';
 import 'styles.css';
-import { Canvas } from './canvas';
 import { Entity } from './entity';
 
 window.addEventListener('DOMContentLoaded', (event) => {
@@ -29,6 +28,7 @@ document.addEventListener('mousemove', (ev) => {
 document.addEventListener('click', (ev) => {
   canvas.logging = !canvas.logging;
   ray.origin = mouse;
+  // addRandomEntity(mouse);
 });
 
 
@@ -106,15 +106,16 @@ async function main(): Promise<void> {
   //   duration: 0,
   // });
 
-  canvas = new Canvas(model.canvas);
+  canvas = new Canvas(model.canvas.getContext('2d'));
   Physics.initialize({
     collisions: {
-      rect: ['circle', 'stadium'],
-      circle: ['rect', 'stadium'],
+      rect: ['circle', 'stadium', 'rect'],
+      circle: ['rect', 'stadium', 'circle'],
       stadium: ['rect', 'circle', 'stadium'],
     },
     ctx: model.canvas.getContext('2d'),
     showAreas: false,
+    // dontClear: true,
     // resolver: 'spatial-hash-grid',
   });
 
@@ -139,9 +140,9 @@ async function main(): Promise<void> {
   ray = new Ray(new Vector(200, 200), new Vector(1, 0), 100);
   console.log(ray);
 
-  // setupCombinations();
+  setupCombinations();
   // setupMoveTo();
-  setupEntities();
+  // setupEntities();
 
   requestAnimationFrame(start);
 }
@@ -171,6 +172,7 @@ function update(now: number) {
   }
 
   if (model.running) {
+    // canvas.clear();
     updateEntities();
     const updateStart = performance.now();
     const stats = Physics.update(deltaTime, now);
@@ -194,9 +196,9 @@ function update(now: number) {
     }
     Physics.canvas?.drawShape(ray, 'purple');
 
-    // updateCombinations();
+    updateCombinations();
     // updateMoveTo();
-    showEntities(stats);
+    // showEntities(stats);
 
     Physics.canvas.drawText(`Time per update: ~${round(updateTotal / updateCount)} - ${round(updateTime)}`, new Vector(300, 25), 'black');
     Physics.canvas.drawText(`Points: circles: ${points.circles}, rectangles: ${points.rectangles}`, new Vector(500, 25), 'black');
@@ -206,12 +208,23 @@ function update(now: number) {
 }
 
 function setupCombinations() {
+  // const rect45 = new Rect(new Vector(0, 0), new Vector(25, 25));
+  // rect45.orientation = 45;
+  const rect15 = new Rect(new Vector(0, 0), new Vector(25, 25));
+  rect15.orientation = 15;
+  const stadium45 = new Stadium(new Vector(0, 0), new Vector(25, 50), 'vertical');
+  stadium45.orientation = 45;
   const inputs = [
     new Circle(new Vector(0, 0), 25),
-    new Rect(new Vector(0, 0), new Vector(25, 50)),
+    // new Rect(new Vector(0, 0), new Vector(25, 50)),
+    // new Rect(new Vector(0, 0), new Vector(50, 25)),
+    // rect45,
+    rect15,
+    stadium45,
+    // new Rect(new Vector(0, 0), new Vector(25, 50)),
     new Rect(new Vector(0, 0), new Vector(50, 25)),
-    new Stadium(new Vector(0, 0), new Vector(25, 50), 'vertical'),
-    new Stadium(new Vector(0, 0), new Vector(50, 25), 'horizontal'),
+    // new Stadium(new Vector(0, 0), new Vector(25, 50), 'vertical'),
+    // new Stadium(new Vector(0, 0), new Vector(50, 25), 'horizontal'),
   ];
   let index = 0;
   for (let a of inputs) {
@@ -225,6 +238,10 @@ function setupCombinations() {
       // b.vertices = new Vector(x + 100, y);
       const swept = a.getSweptShape(b);
       // swept._vertices.add(new Vector(100, 0), true);
+
+      a.position = new Vector(x, y);
+      b.position = new Vector(x + 100, y);
+      swept.position = new Vector(x + 200, y);
 
       shapes.push(a, b, swept);
       index++;
@@ -311,45 +328,86 @@ function setupCombinations() {
 
 function updateCombinations() {
   let firstIntersection = new Intersection();
-  shapes.forEach(shape => {
+  for (let i = 0, ii = shapes.length; i < ii; i += 3) {
+    const a = shapes[i];
+    const b = shapes[i + 1];
+    const c = shapes[i + 2];
+    const swept = a.getSweptShape(b);
+    swept.position = c.position.clone();
+    shapes[i + 2] = swept;
+  }
+
+  for (let i = 0, ii = shapes.length; i < ii; i++) {
+    const shape = shapes[i];
+    if ((i % 3) === 0) {
+      shape.orientation += 0.7;
+    }
+    if ((i % 3) === 1) {
+      shape.orientation -= 0.4;
+    }
     const intersection = ray.getIntersection(shape);
     if (intersection.intersects) {
       // console.log(intersection.time);
-      canvas.drawShape(shape, 'red');
+      shape.draw(canvas, 'red');
       if (intersection.time < firstIntersection.time) {
         firstIntersection = intersection;
       }
     } else {
-      canvas.drawShape(shape, 'purple');
+      shape.draw(canvas, 'purple');
     }
     const point = new Point(ray.end ?? new Vector());
     if (point.within(shape)) {
-      canvas.drawShape(shape, 'green');
+      shape.draw(canvas, 'green');
     }
-  });
+
+    // if (shape instanceof Stadium || shape instanceof Rect || shape instanceof Circle) {
+    //   const vertices = shape.vertices;
+    //   const edges = [
+    //     // vertices[2].subtract(vertices[1]).normalize(),
+    //     // vertices[0].subtract(vertices[3]).normalize(),
+    //     new Vector(0, -1),
+    //     new Vector(1, -1).normalize(),
+    //     new Vector(1, 0),
+    //     new Vector(1, 1).normalize(),
+    //     new Vector(0, 1),
+    //     new Vector(-1, 1).normalize(),
+    //     new Vector(-1, 0),
+    //     new Vector(-1, 1).normalize(),
+    //   ];
+    //   // const edgePairs = shape.getEdgeVertices(edges);
+    //   const edgeVertices = shape.getEdgesVertex(edges);
+    //   const colors = ['blue', 'cyan', 'brown', 'green', 'magenta', 'orange', 'red', 'black']
+    //   for (let i = 0; i < 8; i++) {
+    //     // const pair = edgePairs[i];
+    //     const { vertex } = edgeVertices[i];
+    //     // canvas.drawShape(new Line(pair[0].vertex, pair[1].vertex), colors[i]);
+    //     // canvas.drawCross(pair[0].vertex, colors[i], 2);
+
+    //     canvas.drawCross(vertex, colors[i], 4);
+    //   }
+    // }
+  }
   if (firstIntersection.intersects) {
     canvas.drawShape(new Circle(firstIntersection.point, 10), 'red');
     canvas.drawShape(new Line(firstIntersection.point, firstIntersection.point.add(firstIntersection.normal.multiply(15))), 'red');
     canvas.drawShape(new Line(firstIntersection.point, firstIntersection.point.add(firstIntersection.tangent.multiply(15))), 'black');
 
     if (Array.isArray(firstIntersection.shapes)) {
-      firstIntersection.shapes.forEach(shape => canvas.drawShape(shape, 'red'));
+      firstIntersection.shapes.forEach(shape => shape.draw(canvas, 'red'));
     }
   }
 }
 
 let currentShape;
 function setupMoveTo() {
-  for (let i = 0; i < 10; i++) {
+  let randomStart = 1;
+  for (let i = 0; i < 5; i++) {
     let shape;
-    switch (randomInt(1, 4)) {
+    switch (randomInt(3, 4)) {
       case 1:
         shape = new Circle(new Vector(random(100, 800), random(100, 800)), 50);
         break;
-      case 2:
-        shape = new Rect(new Vector(random(100, 800), random(100, 800)), new Vector(random(10, 100), random(10, 100)));
-        break;
-      case 3: {
+      case 2: {
         const alignment = random(0, 1) < 0.5 ? 'horizontal' : 'vertical';
         const size = new Vector(random(10, 100), random(10, 100));
         if (alignment === 'horizontal') {
@@ -360,53 +418,67 @@ function setupMoveTo() {
         shape = new Stadium(new Vector(random(100, 800), random(100, 800)), size, alignment);
         break;
       }
+      case 3:
+        shape = new Rect(new Vector(random(100, 800), random(100, 800)), new Vector(random(10, 100), random(10, 100)));
+        break;
+      case 4:
+        // shape = new Line(new Vector(random(100, 800), random(100, 800)), new Vector(random(100, 800), random(100, 800)));
+        break;
     }
-    if (!shapes.some(s => s.overlaps(shape))) {
+    if (shape && !shapes.some(s => s.overlaps(shape))) {
+      // if (shape instanceof Rect) {
       shapes.push(shape);
     } else {
       i--;
     }
+    // if (i === 0) {
+    //   shapes.push(new Line(new Vector(200, 100), new Vector(800, 500)));
+    // }
   }
   currentShape = shapes[0];
 }
 
 function updateMoveTo() {
-  if (currentShape.position.x !== ray.origin.x || currentShape.position.y !== ray.origin.y) {
-    const movement = new Ray(currentShape.position, ray.origin.subtract(currentShape.position));
-
-    let firstIntersection = new Intersection();
-    shapes.forEach(shape => {
-      if (shape === currentShape) {
-        return;
-      }
-      const swept = currentShape.getSweptShape(shape);
-      canvas.drawShape(swept, 'green');
-      const intersection = movement.getIntersection(swept);
-      if (intersection.intersects) {
-        canvas.drawShape(shape, 'red');
-        if (intersection.time < firstIntersection.time) {
-          firstIntersection = intersection;
-        }
-      } else {
-        canvas.drawShape(shape, 'purple');
-      }
-    });
-    if (firstIntersection.intersects) {
-      canvas.drawShape(new Circle(firstIntersection.point, 10), 'red');
-      canvas.drawShape(new Line(firstIntersection.point, firstIntersection.point.add(firstIntersection.normal.multiply(15))), 'red');
-      canvas.drawShape(new Line(firstIntersection.point, firstIntersection.point.add(firstIntersection.tangent.multiply(15))), 'black');
-
-      if (Array.isArray(firstIntersection.shapes)) {
-        firstIntersection.shapes.forEach(shape => canvas.drawShape(shape, 'red'));
-      }
-      currentShape.position = currentShape.position.add(movement.directionVector.multiply(movement.magnitude * firstIntersection.time));
-      ray.origin = currentShape.position.clone();
-    } else {
-      currentShape.position = currentShape.position.add(movement.directionVector.multiply(movement.magnitude));
-    }
-  }
+  // if (currentShape.position.x !== ray.origin.x || currentShape.position.y !== ray.origin.y) {
+  const movement = new Ray(currentShape.position ?? currentShape.start, ray.origin.subtract(currentShape.position));
 
   let firstIntersection = new Intersection();
+  shapes.forEach(shape => {
+    // if (shape instanceof Rect) {
+    // shape.orientation += 1;
+    // }
+    if (shape === currentShape) {
+      shape.orientation += 1;
+      return;
+    }
+    const swept = shape instanceof Line ? shape : currentShape.getSweptShape(shape);
+    canvas.drawShape(swept, 'green');
+    const intersection = movement.getIntersection(swept);
+    if (intersection.intersects) {
+      canvas.drawShape(shape, 'red');
+      if (intersection.time < firstIntersection.time) {
+        firstIntersection = intersection;
+      }
+    } else {
+      canvas.drawShape(shape, 'purple');
+    }
+  });
+  if (firstIntersection.intersects) {
+    canvas.drawShape(new Circle(firstIntersection.point, 10), 'red');
+    canvas.drawShape(new Line(firstIntersection.point, firstIntersection.point.add(firstIntersection.normal.multiply(15))), 'red');
+    canvas.drawShape(new Line(firstIntersection.point, firstIntersection.point.add(firstIntersection.tangent.multiply(15))), 'black');
+
+    if (Array.isArray(firstIntersection.shapes)) {
+      firstIntersection.shapes.forEach(shape => canvas.drawShape(shape, 'red'));
+    }
+    currentShape.position = currentShape.position.add(movement.normalizedDirection.multiply(movement.magnitude * Math.max(firstIntersection.time)));
+    ray.origin = currentShape.position.clone();
+  } else {
+    currentShape.position = currentShape.position.add(movement.normalizedDirection.multiply(movement.magnitude));
+  }
+  // }
+
+  firstIntersection = new Intersection();
   shapes.forEach(shape => {
     if (shape === currentShape) {
       canvas.drawShape(shape, 'purple');
@@ -437,14 +509,14 @@ function updateMoveTo() {
 
 const entities = [];
 let currentEntity;
-const entityAmount = 50;
+const entityAmount = 0;
 const points = {
   circles: 0,
   rectangles: 0,
 };
 function setupEntities() {
   // Physics.addForce(Force.Drag({ density: 1, coefficient: 0.01 }));
-  // Physics.addForce(Force.Gravity({ G: 50 }));
+  Physics.addForce(Force.Gravity({ G: 10 }));
 
   // Physics.addForce({
   //   name: 'drag',
@@ -462,99 +534,116 @@ function setupEntities() {
   // });
 
 
-  const sizeFactor = entityAmount > 50 ? entityAmount / 100 : 1;
+  let bar = new Entity(new Vector(550, 1000));
+  bar.color = `#${randomInt(0, 255).toString(16).padStart(2, '0')}${randomInt(0, 255).toString(16).padStart(2, '0')}${randomInt(0, 255).toString(16).padStart(2, '0')}`;
+
+  bar.shapes = [{ size: { x: 800, y: 50 }, color: 'blue', types: ['rect'] }];
+  bar.mass = 0;
+  bar.restitution = 0.5;
+  bar = Physics.addEntities(bar)[0];
+
   for (let i = 0; i < entityAmount; i++) {
-    const shape = {
-      position: { x: 0, y: 0 },
-      radius: undefined,
-      size: undefined,
-      alignment: undefined,
-      types: undefined,
-    };
-    switch (randomInt(1, 4)) {
-      case 1:
-        shape.radius = random(25 / sizeFactor, 50 / sizeFactor);
-        shape.types = ['circle'];
-        // shape = new Circle(new Vector(), random(25, 50));
-        break;
-      case 2:
-        shape.size = new Vector(random(10 / sizeFactor, 100 / sizeFactor), random(10 / sizeFactor, 100 / sizeFactor));
-        // shape = new Rect(new Vector(), new Vector(random(10, 100), random(10, 100)));
-        shape.types = ['rect'];
-        break;
-      case 3: {
-        const alignment = random(0, 1) < 0.5 ? 'horizontal' : 'vertical';
-        const size = new Vector(random(10 / sizeFactor, 100 / sizeFactor), random(10 / sizeFactor, 100 / sizeFactor));
-        if (alignment === 'horizontal') {
-          size.x = Math.max(size.x, size.y * 2);
-        } else {
-          size.y = Math.max(size.y, size.x * 2);
-        }
-        shape.size = size;
-        shape.alignment = alignment;
-        // shape = new Stadium(new Vector(), size, alignment);
-        shape.types = ['stadium'];
-        break;
-      }
-    }
-
-    // shapes: [rect ? { size: [radius * 2, radius * 2], position: offset, orientation: 0 } : { radius, position: offset }],
-
-    let entity = new Entity(new Vector(random(1, 1100), random(1, 1100)));
-    entity.color = `#${randomInt(0, 255).toString(16).padStart(2, '0')}${randomInt(0, 255).toString(16).padStart(2, '0')}${randomInt(0, 255).toString(16).padStart(2, '0')}`;
-
-    entity.shapes = [shape];
-    entity.forces = [{
-      name: 'movement',
-      direction: { x: Math.random() * 2 - 1, y: Math.random() * 2 - 1 },
-      maxMagnitude: 600,
-      // maxMagnitude: random(0, 300),
-      duration: 0,
-    }];
-    entity.maxSpeed = 500;
-    entity.colliding = function (entity: PhysicsEntity, intersection: Intersection) {
-      if (this === intersection.mover) {
-        return 'collide';
-      }
-      const thisShape = intersection.moverShape.shape;
-      const entityShape = intersection.entityShape.shape;
-      if (
-        (thisShape instanceof Circle && entityShape instanceof Rect) ||
-        (thisShape instanceof Rect && entityShape instanceof Circle)
-      ) {
-        points[thisShape instanceof Circle ? 'circles' : 'rectangles']++;
-        return 'remove';
-      }
-      return 'collide';
-    }
-
-    entity = Physics.addEntities(entity)[0];
-    entity.mass = entity.shapes[0].shape.area * 2;
-    if (randomInt(1, 5) === 1) {
-      entity.mass = 0;
-    }
-    entities.push(entity);
-    // if (!entities.some(e => e.shapes[0].worldShape.shape.overlaps(entity.shapes[0].worldShape.shape))) {
-    //   entities.push(entity);
-    // } else {
-    //   Physics.removeEntities(entity as PhysicsEntity);
-    //   i--;
-    // }
+    addRandomEntity();
   }
-  currentEntity = entities[0];
+  currentEntity = null; // entities[0];
   // currentEntity.mass = 1000000;
 }
 
+function addRandomEntity(position?: Vector) {
+  const sizeFactor = entityAmount > 50 ? entityAmount / 100 : 1;
+  const shape = {
+    position: { x: 0, y: 0 },
+    radius: undefined,
+    size: undefined,
+    alignment: undefined,
+    types: undefined,
+  };
+  let shapeType = randomInt(1, 4);
+  // shapeType = 3;
+  switch (shapeType) {
+    case 1:
+      shape.radius = random(25 / sizeFactor, 50 / sizeFactor);
+      shape.types = ['circle'];
+      // shape = new Circle(new Vector(), random(25, 50));
+      break;
+    case 2:
+      shape.size = new Vector(random(10 / sizeFactor, 100 / sizeFactor), random(10 / sizeFactor, 100 / sizeFactor));
+      // shape = new Rect(new Vector(), new Vector(random(10, 100), random(10, 100)));
+      shape.types = ['rect'];
+      break;
+    case 3: {
+      const alignment = random(0, 1) < 0.5 ? 'horizontal' : 'vertical';
+      const size = new Vector(random(10 / sizeFactor, 100 / sizeFactor), random(10 / sizeFactor, 100 / sizeFactor));
+      if (alignment === 'horizontal') {
+        size.x = Math.max(size.x, size.y * 2);
+      } else {
+        size.y = Math.max(size.y, size.x * 2);
+      }
+      shape.size = size;
+      shape.alignment = alignment;
+      // shape = new Stadium(new Vector(), size, alignment);
+      shape.types = ['stadium'];
+      break;
+    }
+  }
+
+  // shapes: [rect ? { size: [radius * 2, radius * 2], position: offset, orientation: 0 } : { radius, position: offset }],
+
+  let entity = new Entity(position ?? new Vector(random(1, 1100), random(1, 1100)));
+  entity.color = `#${randomInt(0, 255).toString(16).padStart(2, '0')}${randomInt(0, 255).toString(16).padStart(2, '0')}${randomInt(0, 255).toString(16).padStart(2, '0')}`;
+
+  entity.shapes = [shape];
+  entity.forces = position == null ? [{
+    name: 'movement',
+    direction: { x: Math.random() * 2 - 1, y: Math.random() * 2 - 1 },
+    maxMagnitude: 600,
+    // maxMagnitude: random(0, 300),
+    duration: 0,
+  }]
+    : [];
+  entity.maxSpeed = 500;
+  entity.colliding = function (entity: PhysicsEntity, intersection: Intersection) {
+    // if (this === intersection.mover) {
+    //   return 'collide';
+    // }
+    // const thisShape = intersection.moverShape.shape;
+    // const entityShape = intersection.entityShape.shape;
+    // if (
+    //   (thisShape instanceof Circle && entityShape instanceof Rect) ||
+    //   (thisShape instanceof Rect && entityShape instanceof Circle)
+    // ) {
+    //   points[thisShape instanceof Circle ? 'circles' : 'rectangles']++;
+    //   return 'remove';
+    // }
+    return 'collide';
+  }
+  entity.restitution = 0.75;
+  entity = Physics.addEntities(entity)[0];
+  entity.mass = entity.shapes[0].shape.area * 2;
+  // if (randomInt(1, 5) === 1) {
+  //   entity.mass = 0;
+  // }
+  entities.push(entity);
+  // if (!entities.some(e => e.shapes[0].worldShape.shape.overlaps(entity.shapes[0].worldShape.shape))) {
+  //   entities.push(entity);
+  // } else {
+  //   Physics.removeEntities(entity as PhysicsEntity);
+  //   i--;
+  // }
+}
+
 function updateEntities() {
-  if (currentEntity.position.x !== ray.origin.x || currentEntity.position.y !== ray.origin.y) {
+  if (currentEntity != null && (currentEntity.position.x !== ray.origin.x || currentEntity.position.y !== ray.origin.y)) {
     const movement = new Ray(currentEntity.position, ray.origin.subtract(currentEntity.position));
 
     currentEntity.addForce({
       name: 'movement',
-      direction: movement.directionVector,
+      direction: movement.normalizedDirection,
       maxMagnitude: movement.magnitude,
       duration: 0,
     });
+
+
 
     // let firstIntersection = new Intersection();
     // entities.forEach(entity => {
@@ -584,10 +673,10 @@ function updateEntities() {
     //     firstIntersection.shapes.forEach(shape => canvas.drawShape(shape, 'red'));
     //   }
 
-    //   currentEntity.position = currentEntity.position.add(movement.directionVector.multiply(movement.magnitude * firstIntersection.time));
+    //   currentEntity.position = currentEntity.position.add(movement.normalizedDirection.multiply(movement.magnitude * firstIntersection.time));
     //   ray.origin = currentEntity.position.clone();
     // } else {
-    //   currentEntity.position = currentEntity.position.add(movement.directionVector.multiply(movement.magnitude));
+    //   currentEntity.position = currentEntity.position.add(movement.normalizedDirection.multiply(movement.magnitude));
     // }
   }
 
@@ -628,55 +717,57 @@ let showRayCollision = false;
 let showData = false;
 function showEntities(stats) {
 
-  if (currentEntity.position.x !== ray.origin.x || currentEntity.position.y !== ray.origin.y) {
+  if (currentEntity != null && (currentEntity.position.x !== ray.origin.x || currentEntity.position.y !== ray.origin.y)) {
     ray.origin = currentEntity.position.clone();
   }
 
   // let firstIntersection = new Intersection();
-  // entities.forEach(entity => {
-  //   const entityShape = entity.shapes[0].worldShape.shape;
-  //   const movementRadius = Math.sqrt(entity.movementRadius);
-  //   const movementBox = entity.movementBox;
-  //   if (entity === currentEntity) {
-  //     canvas.drawShape(entityShape, 'blue', entity.color);
-  //     if (showData) {
-  //       canvas.drawShape(new Circle(entity.position, movementRadius), 'red');
-  //       canvas.drawShape(new Rect(entity.position, movementBox), 'red');
-  //       canvas.drawText(Math.floor(entity.speed), entity.position.add([-5, 15]), 'black');
-  //     }
-  //     return;
-  //   }
-  //   if (showRayCollision) {
-  //     const intersection = ray.getIntersection(entityShape);
-  //     if (!intersection.intersects) {
-  //       canvas.drawShape(entityShape, 'black', entity.color);
-  //       if (showData) {
-  //         canvas.drawShape(new Circle(entity.position, movementRadius), 'red');
-  //         canvas.drawShape(new Rect(entity.position, movementBox), 'red');
-  //         canvas.drawText(Math.floor(entity.speed), entity.position.add([-5, 15]), 'black');
-  //       }
-  //       return;
-  //     }
+  entities.forEach(entity => {
+    canvas.drawText(entity.color, entity.position.add([-15, 15]), 'black');
+    canvas.drawText(Math.floor(entity.speed), entity.position.add([-5, 25]), 'black');
+    //   const entityShape = entity.shapes[0].worldShape.shape;
+    //   const movementRadius = Math.sqrt(entity.movementRadius);
+    //   const movementBox = entity.movementBox;
+    //   if (entity === currentEntity) {
+    //     canvas.drawShape(entityShape, 'blue', entity.color);
+    //     if (showData) {
+    //       canvas.drawShape(new Circle(entity.position, movementRadius), 'red');
+    //       canvas.drawShape(new Rect(entity.position, movementBox), 'red');
+    //       canvas.drawText(Math.floor(entity.speed), entity.position.add([-5, 15]), 'black');
+    //     }
+    //     return;
+    //   }
+    //   if (showRayCollision) {
+    //     const intersection = ray.getIntersection(entityShape);
+    //     if (!intersection.intersects) {
+    //       canvas.drawShape(entityShape, 'black', entity.color);
+    //       if (showData) {
+    //         canvas.drawShape(new Circle(entity.position, movementRadius), 'red');
+    //         canvas.drawShape(new Rect(entity.position, movementBox), 'red');
+    //         canvas.drawText(Math.floor(entity.speed), entity.position.add([-5, 15]), 'black');
+    //       }
+    //       return;
+    //     }
 
-  //     // console.log(intersection.time);
-  //     canvas.drawShape(entityShape, 'red', entity.color);
-  //     if (showData) {
-  //       canvas.drawShape(new Circle(entity.position, movementRadius), 'red');
-  //       canvas.drawShape(new Rect(entity.position, movementBox), 'red');
-  //       canvas.drawText(Math.floor(entity.speed), entity.position.add([-5, 15]), 'black');
-  //     } if (intersection.time < firstIntersection.time) {
-  //       firstIntersection = intersection;
-  //     }
-  //   } else {
-  //     canvas.drawShape(entityShape, 'black', entity.color);
-  //     if (showData) {
-  //       canvas.drawShape(new Circle(entity.position, movementRadius), 'red');
-  //       canvas.drawShape(new Rect(entity.position, movementBox), 'red');
-  //       canvas.drawText(Math.floor(entity.speed), entity.position.add([-5, 15]), 'black');
-  //     }
-  //     return;
-  //   }
-  // });
+    //     // console.log(intersection.time);
+    //     canvas.drawShape(entityShape, 'red', entity.color);
+    //     if (showData) {
+    //       canvas.drawShape(new Circle(entity.position, movementRadius), 'red');
+    //       canvas.drawShape(new Rect(entity.position, movementBox), 'red');
+    //       canvas.drawText(Math.floor(entity.speed), entity.position.add([-5, 15]), 'black');
+    //     } if (intersection.time < firstIntersection.time) {
+    //       firstIntersection = intersection;
+    //     }
+    //   } else {
+    //     canvas.drawShape(entityShape, 'black', entity.color);
+    //     if (showData) {
+    //       canvas.drawShape(new Circle(entity.position, movementRadius), 'red');
+    //       canvas.drawShape(new Rect(entity.position, movementBox), 'red');
+    //       canvas.drawText(Math.floor(entity.speed), entity.position.add([-5, 15]), 'black');
+    //     }
+    //     return;
+    //   }
+  });
   // if (firstIntersection.intersects) {
   //   canvas.drawShape(new Circle(firstIntersection.point, 10), 'red');
   //   canvas.drawShape(new Line(firstIntersection.point, firstIntersection.point.add(firstIntersection.normal.multiply(15))), 'red');
@@ -689,7 +780,13 @@ function showEntities(stats) {
 
   // Shouldn't really be in show, but will work for now
   for (const mover of Array.from(stats.moved) as Entity[]) {
-    mover.position.add([1100, 1100], true).modulus(1100, true);
+    // mover.position.add([1100, 1100], true).modulus(1100, true);
+    if (mover.position.y > 1300) {
+      Physics.removeEntities(mover);
+    }
+    if (mover.position.x > 1100 || mover.position.x < 0) {
+      Physics.removeEntities(mover);
+    }
     // const shape = mover.shapes[0].worldShape.shape;
     // if (shape.position.x < 0) {
     //   mover.velocity.x = -mover.velocity.x;

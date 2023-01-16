@@ -1,4 +1,4 @@
-import { Rect, Circle, Line, Vector, Point, Polygon, Ray, Stadium, RoundedRect } from '@peasy-lib/peasy-physics';
+import { Rect, Circle, Line, Vector, Point, Polygon, Ray, Stadium, RoundedRect, ExpandedRect } from '@peasy-lib/peasy-physics';
 
 export class Canvas {
   public logging = false;
@@ -364,8 +364,10 @@ export class Canvas {
     this.drawCross(point, 'blue', 5);
   }
 
-  public drawShape(shape: Rect | Circle | Line | Polygon | Ray | Stadium, color: string, fillColor?: string, debug = true) {
-    const ctx = this._ctx;
+  public drawShape(shape: Rect | Circle | Line | Polygon | Ray | Stadium | ExpandedRect, color: string, fillColor?: string, debug = true) {
+    console.log('WRONG CANVAS DRAWING');
+
+    const ctx = this.ctx;
     ctx.strokeStyle = color;
     if (fillColor) {
       ctx.fillStyle = fillColor;
@@ -399,47 +401,54 @@ export class Canvas {
       //   ctx.arc(shape.origin.x, shape.origin.y, 3, 0, 2 * Math.PI);
       //   ctx.stroke();
     } else if (shape instanceof Stadium) {
-      // if (shape instanceof Polygon) debugger;
+      const PI = Math.PI;
+      const RADIANS = Math.PI / 180;
+      ctx.beginPath();
+      const vertices = shape.vertices;
+      if (shape.horizontal) {
+        ctx.moveTo(vertices[0].x, vertices[0].y);
+        ctx.lineTo(vertices[1].x, vertices[1].y);
+        ctx.arc(vertices[4].x, vertices[4].y, shape.radius, (shape.orientation + 180) * RADIANS, (shape.orientation) * RADIANS, false);
+        ctx.lineTo(vertices[3].x, vertices[3].y);
+      } else {
+        ctx.moveTo(vertices[0].x, vertices[0].y);
+        ctx.lineTo(vertices[1].x, vertices[1].y);
+        ctx.arc(vertices[5].x, vertices[5].y, shape.radius, (shape.orientation) * RADIANS, (shape.orientation + 180) * RADIANS, false);
+        ctx.lineTo(vertices[3].x, vertices[3].y);
+        ctx.arc(vertices[4].x, vertices[4].y, shape.radius, (shape.orientation + 180) * RADIANS, (shape.orientation) * RADIANS, false);
+      }
 
-      // ctx.beginPath();
-      // ctx.moveTo(shape.position.x, shape.position.y - 3);
-      // ctx.lineTo(shape.position.x, shape.position.y + 3);
-      // ctx.stroke();
-      // ctx.beginPath();
-      // ctx.moveTo(shape.position.x - 3, shape.position.y);
-      // ctx.lineTo(shape.position.x + 3, shape.position.y);
-      // ctx.stroke();
-
-      // ctx.beginPath();
-      // const vertices = shape.vertices;
-      // for (let i = 0; i < vertices.length; i++) {
+      // ctx.arc(vertices[4].x, vertices[4].y, shape.radius, (shape.orientation + 180) * RADIANS, (shape.orientation) * RADIANS, false);
+      // for (let i = 0; i < 4; i++) {
       //   ctx.lineTo(vertices[i].x, vertices[i].y);
       // }
       // ctx.lineTo(vertices[0].x, vertices[0].y);
-      // // ctx.rect(shape.left, shape.top, shape.width, shape.height);
-      // ctx.stroke();
-
-      const PI = Math.PI;
-      const position = shape.position;
-      const r = shape.radius;
-      ctx.beginPath();
-      if (shape.horizontal) {
-        ctx.arc(shape.right - r, position.y, r, PI / 2, PI * 1.5, true);
-        ctx.lineTo(shape.left + r, shape.top);
-        ctx.arc(shape.left + r, position.y, r, PI * 1.5, PI * 0.5, true);
-        ctx.lineTo(shape.right - r, shape.bottom);
-      } else {
-        ctx.arc(position.x, shape.top + r, r, 0, PI, true);
-        ctx.lineTo(shape.left, shape.bottom - r);
-        ctx.arc(position.x, shape.bottom - r, r, PI, 0, true);
-        ctx.lineTo(shape.right, shape.top + r);
-      }
       if (fillColor) {
         ctx.fill();
       }
       ctx.stroke();
 
-      this.drawCross(position, color, 2);
+
+      // const position = shape.position;
+      // const r = shape.radius;
+      // ctx.beginPath();
+      // if (shape.horizontal) {
+      //   ctx.arc(shape.right - r, position.y, r, PI / 2, PI * 1.5, true);
+      //   ctx.lineTo(shape.left + r, shape.top);
+      //   ctx.arc(shape.left + r, position.y, r, PI * 1.5, PI * 0.5, true);
+      //   ctx.lineTo(shape.right - r, shape.bottom);
+      // } else {
+      //   ctx.arc(position.x, shape.top + r, r, 0, PI, true);
+      //   ctx.lineTo(shape.left, shape.bottom - r);
+      //   ctx.arc(position.x, shape.bottom - r, r, PI, 0, true);
+      //   ctx.lineTo(shape.right, shape.top + r);
+      // }
+      // if (fillColor) {
+      //   ctx.fill();
+      // }
+      // ctx.stroke();
+
+      this.drawCross(shape.position, color, 2);
     } else if (shape instanceof RoundedRect) {
       // if (shape instanceof Polygon) debugger;
 
@@ -490,6 +499,103 @@ export class Canvas {
       // }
 
       this.drawCross(shape.position, color, 2);
+    } else if (shape instanceof ExpandedRect) {
+      const { min, max } = shape.corner.getMinMax();
+      const rotatedSize = max.subtract(min);
+      let leftCorner = new Vector(Infinity, -Infinity);
+      let topCorner = new Vector(-Infinity, Infinity);
+      for (const vertex of shape.corner.vertices) {
+        if (vertex.x < leftCorner.x) {
+          leftCorner = vertex;
+        }
+        if (vertex.y < topCorner.y) {
+          topCorner = vertex;
+        }
+      }
+      const vertices = shape.vertices;
+      if (false) {
+        ctx.beginPath();
+        for (let i = 0; i < vertices.length; i++) {
+          ctx.lineTo(vertices[i].x, vertices[i].y);
+        }
+        ctx.lineTo(vertices[0].x, vertices[0].y);
+        // ctx.rect(shape.left, shape.top, shape.width, shape.height);
+        if (fillColor != null) {
+          ctx.fill();
+        }
+        ctx.stroke();
+      }
+      const top = new Rect(shape.position.clone(), shape.size.clone());
+      top.size.x -= rotatedSize.x;
+      // const shift = topCorner.x;
+      // console.log('shift', shape.corner.vertices, shift, rotatedSize, topCorner);
+      top.position.x -= topCorner.x; // shift;
+      top.size.y *= 0.5; // IF not even 90
+      top.position.y += top.size.y / 2; // IF not even 90
+      this.drawShape(top, 'blue', fillColor);
+
+      const bottom = new Rect(shape.position.clone(), shape.size.clone());
+      bottom.size.x -= rotatedSize.x;
+      // const shift = bottomCorner.x;
+      // console.log('shift', shape.corner.vertices, shift, rotatedSize, bottomCorner);
+      bottom.position.x += topCorner.x; // shift;
+      bottom.size.y *= 0.5; // IF not even 90
+      bottom.position.y -= bottom.size.y / 2; // IF not even 90
+      this.drawShape(bottom, 'blue', fillColor);
+
+      const left = new Rect(shape.position.clone(), shape.size.clone());
+      left.size.y -= rotatedSize.y;
+      left.position.y += leftCorner.y; // shift.y;
+      left.size.x *= 0.5; // IF not even 90
+      left.position.x -= left.size.x / 2; // IF not even 90
+      this.drawShape(left, 'green', fillColor);
+
+      const right = new Rect(shape.position.clone(), shape.size.clone());
+      right.size.y -= rotatedSize.y;
+      right.position.y -= leftCorner.y; // shift.y;
+      right.size.x *= 0.5; // IF not even 90
+      right.position.x += right.size.x / 2; // IF not even 90
+      this.drawShape(right, 'green', fillColor);
+
+      let corner = shape.corner.clone();
+      corner.position = shape.position.clone();
+      corner.position.x -= top.size.half.x;
+      corner.position.y -= left.size.half.y;
+      this.drawShape(corner, color, fillColor);
+
+      corner = shape.corner.clone();
+      corner.position = shape.position.clone();
+      corner.position.x += top.size.half.x;
+      corner.position.y -= left.size.half.y;
+      this.drawShape(corner, color, fillColor);
+
+      corner = shape.corner.clone();
+      corner.position = shape.position.clone();
+      corner.position.x += top.size.half.x;
+      corner.position.y += left.size.half.y;
+      this.drawShape(corner, color, fillColor);
+
+      corner = shape.corner.clone();
+      corner.position = shape.position.clone();
+      corner.position.x -= top.size.half.x;
+      corner.position.y += left.size.half.y;
+      this.drawShape(corner, color, fillColor);
+
+      this.drawCross(shape.position, color, 2);
+
+      // ctx.beginPath();
+      // ctx.arc(shape.left + r, shape.top + r, r, Math.PI * -0.5, Math.PI, true);
+      // ctx.lineTo(shape.left, shape.bottom - r);
+      // ctx.arc(shape.left + r, shape.bottom - r, r, Math.PI, Math.PI * 0.5, true);
+      // ctx.lineTo(shape.right - r, shape.bottom);
+      // ctx.arc(shape.right - r, shape.bottom - r, r, Math.PI * 0.5, 0, true);
+      // ctx.lineTo(shape.right, shape.top + r);
+      // ctx.arc(shape.right - r, shape.top + r, r, 0, -Math.PI * 0.5, true);
+      // ctx.lineTo(shape.left + r, shape.top);
+      // if (fillColor != null) {
+      //   ctx.fill();
+      // }
+      // ctx.stroke();
     } else if (shape instanceof Rect || shape instanceof Polygon) {
       // if (shape instanceof Polygon) debugger;
 
@@ -579,7 +685,7 @@ export class Canvas {
   }
 
   public drawCross(position: Vector, color: string, size: number, debug = true) {
-    const ctx = this._ctx;
+    const ctx = this.ctx;
     ctx.strokeStyle = color;
 
     ctx.beginPath();
@@ -593,7 +699,7 @@ export class Canvas {
   }
 
   public drawText(text: string, position: Vector, color: string, font = '11px Arial', debug = true) {
-    const ctx = this._ctx;
+    const ctx = this.ctx;
     ctx.fillStyle = color;
     ctx.font = font;
     ctx.fillText(text, position.x, position.y);

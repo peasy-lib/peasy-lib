@@ -7,6 +7,8 @@ export interface IVector {
 }
 
 export class Vector {
+  public static Zero = new Vector();
+
   public constructor(
     public x = 0,
     public y = 0,
@@ -32,6 +34,10 @@ export class Vector {
 
   public get negHalf(): Vector {
     return this.multiply(-0.5);
+  }
+
+  public get normal(): Vector {
+    return new Vector(this.y, -this.x);
   }
 
   public static from(x: number | number[] | Vector | string | { x: number; y: number; z?: number } = 0, y = 0, z = 0): Vector {
@@ -115,6 +121,10 @@ export class Vector {
 
   public dot(delta: Vector): number {
     return (this.x * delta.x) + (this.y * delta.y);
+  }
+
+  public cross(delta: Vector): number {
+    return (this.x * delta.x) - (this.y * delta.y);
   }
 
   public sign(update = false): Vector {

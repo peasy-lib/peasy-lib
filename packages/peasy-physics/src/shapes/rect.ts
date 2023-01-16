@@ -1,36 +1,26 @@
 import { Circle } from './circle';
 import { ExpandedRect } from './expanded-rect';
 import { GeometricShape } from './geometric-shape';
-import { Point } from './point';
 import { RoundedRect } from './rounded-rect';
 import { Stadium } from './stadium';
 import { Vector } from "../vector";
+import { Line } from './line';
+import { Box } from '../box';
+import { ExpandedStadium } from './expanded-stadium';
 
-export class Rect {
+export class Rect extends GeometricShape {
   public worldSpace = false;
 
-  private _position: Vector;
   private _size: Vector;
-  private _orientation: number = 0;
-
-  private _vertices: Vector[] = [];
 
   public constructor(
     position: Vector,
     size: Vector,
     orientation: number = 0,
   ) {
-    this._position = position;
+    super(position);
     this._size = size;
     this._orientation = orientation;
-  }
-
-  public get position(): Vector {
-    return this._position;
-  }
-  public set position(value: Vector) {
-    this._position = value;
-    this._vertices = [];
   }
 
   public get size(): Vector {
@@ -38,14 +28,6 @@ export class Rect {
   }
   public set size(value: Vector) {
     this._size = value;
-    this._vertices = [];
-  }
-
-  public get orientation(): number {
-    return this._orientation;
-  }
-  public set orientation(value: number) {
-    this._orientation = value;
     this._vertices = [];
   }
 
@@ -106,12 +88,25 @@ export class Rect {
     return Math.sqrt(halfSquared.x + halfSquared.y);
   }
 
-  public get boundingBox(): Rect {
-    return this;
+  public get boundingBox(): Box {
+    if (this._orientation === 0 || this._orientation === 180) {
+      return new Box(new Vector(this.left, this.top), new Vector(this.right, this.bottom));
+    }
+    return super.boundingBox;
   }
 
-  public shapes(): GeometricShape[] {
-    return [];
+  public get shapes(): GeometricShape[] {
+    if (this._orientation === 0 || this._orientation === 180) {
+      return [];
+    } else {
+      const vertices = this.vertices;
+      return [
+        new Line(vertices[0], vertices[1]),
+        new Line(vertices[1], vertices[2]),
+        new Line(vertices[2], vertices[3]),
+        new Line(vertices[3], vertices[0]),
+      ];
+    }
   }
 
   public get vertices(): Vector[] {
@@ -132,6 +127,23 @@ export class Rect {
     return this._vertices;
   }
 
+  public getEdgesVertex(edges: Vector[]): { vertex: Vector; index: number; dot: number }[] {
+    const best: { vertex: Vector; index: number; dot: number }[] = [];
+    const vertices = this.vertices;
+    for (let i = 0, ii = edges.length; i < ii; i++) {
+      const edge = edges[i];
+      best.push({ vertex: vertices[0], index: 0, dot: vertices[0].dot(edge) });
+      for (let j = 1; j < 4; j++) {
+        const vertex = vertices[j];
+        const dot = vertex.dot(edge);
+        if (dot > best[i].dot) {
+          best[i] = { vertex, dot, index: j };
+        }
+      }
+    }
+    return best;
+  }
+
   public equals(rect: Rect): boolean {
     if (!this._position.equals(rect.position) ||
       !this._size.equals(rect.size)
@@ -141,46 +153,24 @@ export class Rect {
     return true;
   }
 
-  public rotate(degrees: number): void {
-    const vertices = this.vertices;
-    if (Math.abs(degrees) !== 0) {
-      vertices.forEach(vertex => vertex.rotate(degrees, true));
-      this._position.rotate(degrees, true);
-      this._orientation += degrees;
-    }
-    this._vertices = vertices;
-    // console.log('orientation', this.#orientation);
-    // if (this.#orientation < 0) {
-    //   this.rotate(-this.#orientation);
-    // }
-  }
-
-  public translate(position: Vector): void {
-    const vertices = this.vertices;
-    vertices.forEach(vertex => vertex.add(position, true));
-    this._position.add(position, true);
-    this._vertices = vertices;
-  }
-
-  public transform(degrees: number, position: Vector): void {
-    this.rotate(degrees);
-    this.translate(position);
-  }
-
-  public resetVertices(): void {
-    this._vertices = [];
-  }
-
   public overlaps(target: Rect | Circle | Stadium): boolean {
-    if (target instanceof Rect) {
-      return !(this.left > target.right ||
-        this.right < target.left ||
-        this.top > target.bottom ||
-        this.bottom < target.top);
+    const boundingBox = target.boundingBox;
+    if (!(this.left > boundingBox.max.x ||
+      this.right < boundingBox.min.x ||
+      this.top > boundingBox.max.y ||
+      this.bottom < boundingBox.min.y)
+    ) {
+      return false;
     }
-    const point = Point.from(this.position);
-    const expanded = this.getSweptShape(target);
-    return point.within(expanded);
+    for (const shape of target.shapes) {
+      // if (SAT.overlaps(this, shape)) {
+      //   return true;
+      // }
+    }
+    return false;
+    // const point = Point.from(this.position);
+    // const expanded = this.getSweptShape(target);
+    // return point.within(expanded);
   }
 
   public within(target: Rect): boolean {
@@ -190,7 +180,7 @@ export class Rect {
       this.bottom > target.bottom);
   }
 
-  public getSweptShape(target: Rect | Circle | Stadium): Rect | Circle | Stadium | RoundedRect | ExpandedRect {
+  public getSweptShape(target: Rect | Circle | Stadium): Rect | Circle | Stadium | RoundedRect | ExpandedRect | ExpandedStadium {
     if (target instanceof Stadium) {
       // console.log(this.#size.toString(), ',', target.size.toString(), '=', target.size.add(this.#size).toString());
       const expanded = target.getSweptShape(this);
@@ -208,35 +198,29 @@ export class Rect {
         expanded.size.add(this.size, true);
         return expanded;
       }
-      const { min, max } = this.getMinMax();
-      const rotatedSize = max.subtract(min);
-      const slant = rotatedSize.subtract(this.size);
-      const corner = this.clone();
-      corner.position = new Vector();
-      console.log('getSweptShape Rect - Rect', this.orientation, rotatedSize, this.size, this.vertices);
-      const expanded = new ExpandedRect(target.position.clone(), target.size.add(rotatedSize), corner);
+      // const { min, max } = this.getMinMax();
+      // const rotatedSize = max.subtract(min);
+      const expansion = this.clone();
+      expansion.position = new Vector();
+      // console.log('getSweptShape Rect - Rect', this.orientation, rotatedSize, this.size, this.vertices);
+      // const expanded = new ExpandedRect(target.position.clone(), target.size.add(rotatedSize), corner, target.orientation);
+      const expanded = new ExpandedRect(target.position.clone(), target.size.clone(), expansion, target.orientation);
       return expanded;
-
     }
     if (target instanceof Circle) {
-      const expanded = target.getSweptShape(this);
-      expanded.position = target.position.clone();
+      const expansion = target.clone();
+      expansion.position = new Vector();
+      // console.log('getSweptShape Rect - Rect', this.orientation, rotatedSize, this.size, this.vertices);
+      // const expanded = new ExpandedRect(target.position.clone(), target.size.add(rotatedSize), corner, target.orientation);
+      const expanded = new ExpandedRect(this.position.clone(), this.size.clone(), expansion, this.orientation);
       return expanded;
+      // const expanded = target.getSweptShape(this);
+      // expanded.position = target.position.clone();
+      // return expanded;
     }
     return this;
   }
 
-  public getMinMax(): { min: Vector, max: Vector } {
-    const min = new Vector();
-    const max = new Vector();
-    const vertices = this.vertices;
-
-    min.x = Math.min(...vertices.map(vertex => vertex.x));
-    min.y = Math.min(...vertices.map(vertex => vertex.y));
-    max.x = Math.max(...vertices.map(vertex => vertex.x));
-    max.y = Math.max(...vertices.map(vertex => vertex.y));
-    return { min, max };
-  }
   public toString(): string {
     return `[${this._position}] (${this._size})`;
   }

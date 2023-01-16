@@ -9,6 +9,7 @@ export class Entity {
   public shapes = [];
   public forces = [];
   public mass: number = 1;
+  public restitution: number = 1;
   public color?;
   public maxSpeed?;
   public colliding?;

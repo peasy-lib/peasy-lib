@@ -7,17 +7,25 @@ import { Rect } from './rect';
 import { RoundedRect } from './rounded-rect';
 import { Stadium } from './stadium';
 import { Vector } from "../vector";
+import { Box } from '../box';
+import { ExpandedStadium } from './expanded-stadium';
 
 export class Ray {
   // public element: SVGLineElement;
 
-  public magnitude: number;
-
   private static readonly _ToDegreesFactor = (180 / Math.PI);
   private static readonly _AngleModifier = 360 + 90;
 
-  private _directionVector?: Vector;
+  // A Ray has at least one of
+  // - a direction vector (not normalized)
+  // - a normalized direction vector and a magnitude
+  // - a direction angle and a magnitude
+
+  private _magnitude?: number;
+  private _direction?: Vector;
+  private _normalizedDirection?: Vector;
   private _directionAngle?: number;
+  private _end?: Vector;
 
   public constructor(
     public origin: Vector,
@@ -25,60 +33,118 @@ export class Ray {
     magnitude?: number,
   ) {
     if (direction instanceof Vector) {
-      this.magnitude = magnitude ?? direction.magnitude;
-      this._directionVector = direction.normalize();
+      if (magnitude == null) {
+        this._direction = direction;
+      } else {
+        this._normalizedDirection = direction;
+        this._magnitude = magnitude;
+      }
     } else {
       this._directionAngle = direction;
-      this.magnitude = magnitude ?? 1;
+      this._magnitude = magnitude ?? 1;
+    }
+  }
+
+  public get direction(): Vector {
+    if (this._direction == null) {
+      this._direction = this._normalizedDirection != null
+        ? this._normalizedDirection.multiply(this.magnitude)
+        : new Vector(); // TODO: Should calculate based on angle and magnitude
+    }
+    return this._direction;
+  }
+
+  public get normalizedDirection(): Vector {
+    if (this._normalizedDirection == null) {
+      this._normalizedDirection = this._direction != null
+        ? this._direction.normalize()
+        : new Vector(); // TODO: Should calculate based on angle
+    }
+    return this._normalizedDirection;
+  }
+
+  public get magnitude(): number {
+    if (this._magnitude == null) {
+      this._magnitude = this._direction!.magnitude;
+    }
+    return this._magnitude;
+  }
+
+  public get directionAngle(): number {
+    if (this._directionAngle == null) {
+      const direction = this._normalizedDirection ?? this._direction;
+      this._directionAngle = (Math.atan2(direction!.y, direction!.x) * Ray._ToDegreesFactor + Ray._AngleModifier) % 360;
+    }
+    return this._directionAngle;
+  }
+
+  public get end(): Vector {
+    if (this._end == null) {
+      this._end = this.origin.add(
+        this._direction != null
+          ? this._direction
+          : (this._normalizedDirection!.multiply(this._magnitude!)
+            // TODO: Should also calculate based on angle and magnitude
+          )
+      );
+    }
+    return this._end;
+  }
+
+  public set end(value: Vector) {
+    this._end = value;
+    const delta = value.subtract(this.origin);
+    if (this._direction != null) {
+      this._direction = delta;
+      this._normalizedDirection = undefined;
+      this._directionAngle = undefined;
+      this._magnitude = undefined;
+    } else if (this._normalizedDirection != null) {
+      this._direction = undefined;
+      this._normalizedDirection = delta.normalize();
+      this._directionAngle = undefined;
+      this._magnitude = delta.magnitude;
+    } else if (this._directionAngle != null) {
+      this._direction = undefined;
+      this._normalizedDirection = undefined;
+      this._directionAngle = undefined; // TODO: Calculate angle based on delta
+      this._magnitude = delta.magnitude;
     }
   }
 
   public get normal(): Vector {
-    const direction = this.directionVector;
+    const direction = this.normalizedDirection;
     return new Vector(-direction.y, direction.x);
   }
 
-  public get directionVector(): Vector {
-    return this._directionVector != null
-      ? this._directionVector
-      : new Vector();
-  }
-
-  public get directionAngle(): number {
-    return this._directionAngle != null
-      ? this._directionAngle
-      : (Math.atan2(this._directionVector!.y, this._directionVector!.x) * Ray._ToDegreesFactor + Ray._AngleModifier) % 360;
-  }
-
-  public set direction(direction: Vector | number) {
-    if (direction instanceof Vector) {
-      this._directionVector = direction;
-      this._directionAngle = undefined;
-    } else {
-      this._directionAngle = direction;
-      this._directionVector = undefined;
+  public getIntersection(shapes: Rect | Circle | Stadium | RoundedRect | ExpandedRect | Line | Box | ExpandedStadium | (Rect | Circle | Stadium | RoundedRect | ExpandedRect | Line | Box | ExpandedStadium)[]): Intersection {
+    if (shapes instanceof Box) {
+      return this.getIntersectionBox(shapes);
     }
-  }
-
-  public get end(): Vector {
-    return this.origin.add(this.directionVector.multiply(this.magnitude));
-  }
-
-  public set end(value: Vector) {
-    const delta = value.subtract(this.origin);
-    this.direction = delta.normalize();
-    this.magnitude = delta.magnitude;
-  }
-
-  public getIntersection(shapes: Rect | Circle | Stadium | RoundedRect | ExpandedRect | (Rect | Circle | Stadium | RoundedRect | ExpandedRect)[]): Intersection {
-    if (shapes instanceof Stadium) {
-      return this.getIntersectionStadium(shapes);
-    }
-    if (shapes instanceof RoundedRect) {
-      return this.getIntersectionRoundedRect(shapes);
+    if (shapes instanceof Line) {
+      return this.getIntersectionLine(shapes);
     }
     if (shapes instanceof Rect) {
-      return this.getIntersectionRect(shapes);
+      if (shapes.orientation % 180 === 0) {
+        return this.getIntersectionBox(new Box(new Vector(shapes.left, shapes.top), new Vector(shapes.right, shapes.bottom)));
+      }
+      // if (shapes.orientation % 90 === 0) {
+      //   return this.getIntersectionBox(new Box(new Vector(shapes.left, shapes.top), new Vector(shapes.right, shapes.bottom)));
+      // }
+      return this.getIntersectionShapes(shapes);
+    }
+    if (shapes instanceof Stadium) {
+      return this.getIntersectionShapes(shapes);
+    }
+    if (shapes instanceof ExpandedRect) {
+      return this.getIntersectionShapes(shapes);
+    }
+    if (shapes instanceof ExpandedStadium) {
+      return this.getIntersectionShapes(shapes);
+    }
+
+    if (shapes instanceof RoundedRect) {
+      return this.getIntersectionRoundedRect(shapes);
     }
     if (shapes instanceof Circle) {
       return this.getIntersectionCircle(shapes);
@@ -86,13 +152,13 @@ export class Ray {
     return new Intersection();
   }
 
-  public getIntersectionRect(target: Rect): Intersection {
+  public getIntersectionBox(target: Box): Intersection {
     const intersection = new Intersection();
     const start = this.origin;
-    const direction = this.end.subtract(this.origin);
+    const direction = this.direction;
 
-    const near = target.position.subtract(target.half).subtract(start).divide(direction);
-    const far = target.position.add(target.half).subtract(start).divide(direction);
+    const near = target.min.subtract(start).divide(direction);
+    const far = target.max.subtract(start).divide(direction);
 
     if (isNaN(near.x) || isNaN(near.y) || isNaN(far.x) || isNaN(far.y)) {
       far.y = Infinity;
@@ -125,7 +191,7 @@ export class Ray {
     }
 
     intersection.normal = direction.sign();
-    if (this.directionVector.multiply(intersection.normal).zero) {
+    if (this.normalizedDirection.multiply(intersection.normal).zero) {
       // this.drawShape(line, 'blue');
       console.log('%%% No movement in normal direction.');
       return intersection;
@@ -140,8 +206,8 @@ export class Ray {
 
     intersection.point = start.add(direction.multiply(intersection.time));
 
-    if (intersection.point.x > target.left && intersection.point.x < target.right &&
-      intersection.point.y > target.top && intersection.point.y < target.bottom) {
+    if (intersection.point.x > target.min.x && intersection.point.x < target.max.x &&
+      intersection.point.y > target.min.y && intersection.point.y < target.max.y) {
       // console.log('##################### WITHIN RECT #########');
     }
 
@@ -186,7 +252,7 @@ export class Ray {
     const startCenterLine = new Line(this.origin, target.position);
 
     const originCircleDirection = this.origin.subtract(target.position);
-    const lengthClosest = originCircleDirection.dot(this.directionVector);
+    const lengthClosest = originCircleDirection.dot(this.normalizedDirection);
     const lengthClosestInCircle = originCircleDirection.dot(originCircleDirection) - (target.radius * target.radius);
     let firstTime = lengthClosest * lengthClosest - lengthClosestInCircle; // Should be sqrt, but wait since costly
     if (firstTime < 0) {
@@ -199,7 +265,7 @@ export class Ray {
       return intersection;
     }
 
-    intersection.point = this.origin.add(this.directionVector.multiply(time));
+    intersection.point = this.origin.add(this.normalizedDirection.multiply(time));
 
     intersection.time = time / this.magnitude;
 
@@ -209,24 +275,11 @@ export class Ray {
     return intersection;
   }
 
-  public getIntersectionStadium(target: Stadium): Intersection {
+  public getIntersectionShapes(target: Rect | Stadium | ExpandedRect | ExpandedStadium): Intersection {
     let firstIntersection = new Intersection();
-    const shapes: (Rect | Circle)[] = [];
-    if (target.horizontal) {
-      shapes.push(
-        new Rect(target.position, target.size.subtract(new Vector(target.radius * 2, 0))),
-        new Circle(new Vector(target.left + target.radius, target.position.y), target.radius),
-        new Circle(new Vector(target.right - target.radius, target.position.y), target.radius),
-      );
-    } else {
-      shapes.push(
-        new Rect(target.position, target.size.subtract(new Vector(0, target.radius * 2))),
-        new Circle(new Vector(target.position.x, target.top + target.radius), target.radius),
-        new Circle(new Vector(target.position.x, target.bottom - target.radius), target.radius),
-      );
-    }
+    const shapes = target.shapes;
     shapes.forEach(shape => {
-      const intersection = this.getIntersection(shape);
+      const intersection = this.getIntersection(shape as Rect | Circle | Line);
       if (intersection.intersects) {
         if (intersection.time < firstIntersection.time) {
           firstIntersection = intersection;
@@ -236,21 +289,40 @@ export class Ray {
     firstIntersection.shapes = shapes;
     return firstIntersection;
   }
+
+  // public getIntersectionRect(target: Rect): Intersection {
+  //   let firstIntersection = new Intersection();
+  //   const shapes = target.shapes;
+  //   shapes.forEach(shape => {
+  //     const intersection = this.getIntersection(shape);
+  //     if (intersection.intersects) {
+  //       if (intersection.time < firstIntersection.time) {
+  //         firstIntersection = intersection;
+  //       }
+  //     }
+  //   });
+  //   firstIntersection.shapes = shapes;
+  //   return firstIntersection;
+  // }
+
+  // public getIntersectionStadium(target: Stadium): Intersection {
+  //   let firstIntersection = new Intersection();
+  //   const shapes = target.shapes;
+  //   shapes.forEach(shape => {
+  //     const intersection = this.getIntersection(shape);
+  //     if (intersection.intersects) {
+  //       if (intersection.time < firstIntersection.time) {
+  //         firstIntersection = intersection;
+  //       }
+  //     }
+  //   });
+  //   firstIntersection.shapes = shapes;
+  //   return firstIntersection;
+  // }
 
   public getIntersectionRoundedRect(target: RoundedRect): Intersection {
     let firstIntersection = new Intersection();
-    const r = target.radius;
-    const r2 = r * 2;
-    const shapes: (Rect | Circle)[] = [
-      new Circle(new Vector(target.left + r, target.top + r), r),
-      new Circle(new Vector(target.right - r, target.top + r), r),
-
-      new Circle(new Vector(target.right - r, target.bottom - r), r),
-      new Circle(new Vector(target.left + r, target.bottom - r), r),
-
-      new Rect(target.position, target.size.subtract(new Vector(r2, 0))),
-      new Rect(target.position, target.size.subtract(new Vector(0, r2))),
-    ];
+    const shapes = target.shapes;
     shapes.forEach(shape => {
       const intersection = this.getIntersection(shape);
       if (intersection.intersects) {
@@ -261,12 +333,198 @@ export class Ray {
     });
     firstIntersection.shapes = shapes;
     return firstIntersection;
+
+    // let firstIntersection = new Intersection();
+    // const r = target.radius;
+    // const r2 = r * 2;
+    // const shapes: (Rect | Circle)[] = [
+    //   new Circle(new Vector(target.left + r, target.top + r), r),
+    //   new Circle(new Vector(target.right - r, target.top + r), r),
+
+    //   new Circle(new Vector(target.right - r, target.bottom - r), r),
+    //   new Circle(new Vector(target.left + r, target.bottom - r), r),
+
+    //   new Rect(target.position, target.size.subtract(new Vector(r2, 0))),
+    //   new Rect(target.position, target.size.subtract(new Vector(0, r2))),
+    // ];
+    // shapes.forEach(shape => {
+    //   const intersection = this.getIntersection(shape);
+    //   if (intersection.intersects) {
+    //     if (intersection.time < firstIntersection.time) {
+    //       firstIntersection = intersection;
+    //     }
+    //   }
+    // });
+    // firstIntersection.shapes = shapes;
+    // return firstIntersection;
+  }
+
+  public checkIntersection(target: Line) {
+    // console.log(x1, y1, '->', x2, y2, 'vs', x3, y3, '->', x4, y4);
+    const start: Vector = this.origin;
+    const end: Vector = this.end;
+    const targetStart: Vector = target.start;
+    const targetEnd: Vector = target.end;
+
+    const direction = end.subtract(start);
+    const targetDirection = targetEnd.subtract(targetStart);
+    const startDirection = start.subtract(targetStart);
+
+    const denom = (targetDirection.y * direction.x) - (targetDirection.x * direction.y);
+    const numeA = (targetDirection.x * startDirection.y) - (targetDirection.y * startDirection.x);
+    const numeB = (direction.x * startDirection.y) - (direction.y * startDirection.x);
+
+    if (denom === 0) {
+      if (numeA === 0 && numeB === 0) {
+        return null;
+      }
+      return null;
+    }
+
+    const time = numeA / denom;
+    const targetTime = numeB / denom;
+
+    if (time < 0 || time > 1 || targetTime < 0 || targetTime > 1) {
+      return null;
+    }
+
+    // console.log('times', time, targetTime);
+    return {
+      time,
+      point: new Vector(start.x + (time * direction.x), start.y + (time * direction.y))
+    };
+
+    // if (time >= 0 && time <= 1 && targetTime >= 0 && targetTime <= 1) {
+    //   // console.log('times', time, targetTime);
+    //   return {
+    //     time,
+    //     point: new Vector(start.x + (time * direction.x), start.y + (time * direction.y))
+    //   };
+    // }
+
+    // return null;
+  }
+
+  public getIntersectionLine(target: Line): Intersection {
+    const intersection = new Intersection();
+    const start: Vector = this.origin;
+    const targetStart: Vector = target.start;
+    const direction = this.end.subtract(start);
+    const targetDirection = target.direction;
+    const startDirection = start.subtract(targetStart);
+
+    const denom = (targetDirection.y * direction.x) - (targetDirection.x * direction.y);
+    const numeA = (targetDirection.x * startDirection.y) - (targetDirection.y * startDirection.x);
+    const numeB = (direction.x * startDirection.y) - (direction.y * startDirection.x);
+
+    if (denom === 0) {
+      if (numeA === 0 && numeB === 0) {
+        return intersection;
+      }
+      return intersection;
+    }
+
+    const time = numeA / denom;
+    const targetTime = numeB / denom;
+
+    if (time < 0 || time > 1 || targetTime < 0 || targetTime > 1) {
+      return intersection;
+    }
+
+    // console.log('times', time, targetTime);
+    // return {
+    //   time,
+    //   point: new Vector(start.x + (time * direction.x), start.y + (time * direction.y))
+    // };
+
+    intersection.intersects = true;
+    intersection.point = start.add(direction.multiply(time));
+    intersection.time = time;
+    // console.log('point', point, direction.cross(intersection.point.subtract(targetStart)));
+    intersection.normal = target.normal.normalize();
+    // console.log('normal', intersection.normal, startDirection.dot(intersection.normal), intersection.normal.dot(startDirection), targetDirection.cross(startDirection));
+    if (startDirection.dot(intersection.normal) < 0) {
+      intersection.normal.negate(true);
+    }
+    // intersection.normal = startDirection.dot(intersection.normal) < 0
+    //   ? new Vector(-intersection.normal.y, intersection.normal.x)
+    //   : new Vector(intersection.normal.y, -intersection.normal.x);
+    // intersection.normal = startDirection.dot(intersection.normal) < 0
+    //   ? new Vector(-intersection.normal.y, intersection.normal.x)
+    //   : new Vector(intersection.normal.y, -intersection.normal.x);
+    // intersection.normal = targetDirection.cross(startDirection) < 0
+    // ? new Vector(-intersection.normal.y, intersection.normal.x)
+    // : new Vector(intersection.normal.y, -intersection.normal.x);
+    intersection.tangent = direction.dot(targetDirection) > 0 ? targetDirection.normalize() : targetDirection.normalize().negate();
+
+    return intersection;
+
+    // // r × s
+    // const r_s = direction.cross(targetDirection);
+    // // (q − p) × r
+    // const q_p_r = targetStart.subtract(start).cross(direction);
+
+    // if (zeroish(r_s) && zeroish(q_p_r)) {
+    //   // t0 = (q − p) · r / (r · r)
+    //   // const t0 = dot(subtractPoints(q, p), r) / dot(r, r);
+
+    //   // t1 = (q + s − p) · r / (r · r) = t0 + s · r / (r · r)
+    //   // const t1 = t0 + dot(s, r) / dot(r, r);
+
+    //   // NOTE(tp): For some reason (which I haven't spotted yet), the above t0 and hence t1 is wrong
+    //   // So resorting to calculating it 'backwards'
+    //   // const t1 = dot(addPoints(targetOrigin, subtractPoints(targetDirection, rayOrigin)), direction) / dot(direction, direction);
+    //   // const t0 = t1 - dot(targetDirection, direction) / dot(direction, direction);
+    //   const t1 = targetStart.add(targetDirection.subtract(start)).dot(direction) / direction.dot(direction);
+    //   const t0 = t1 - targetDirection.dot(direction) / direction.dot(direction);
+
+    //   if (t0 >= 0 && t0 <= 1 || t1 >= 0 && t1 <= 1) {
+    //     intersection.intersects = true;
+    //     intersection.time = t0;
+    //     intersection.point = start.add(direction.multiply(intersection.time));
+    //     intersection.tangent = targetDirection.normalize();
+    //     intersection.normal = new Vector(-intersection.tangent.y, intersection.tangent.x);
+    //     console.log('Line intersection colinear', intersection);
+    //     return intersection;
+    //     // return { type: 'colinear-overlapping', ls0t0: t0, ls0t1: t1 };
+    //   }
+
+    //   return intersection;
+    //   // return { type: 'colinear-disjoint' };
+    // }
+
+    // if (zeroish(r_s) && !zeroish(q_p_r)) {
+    //   return intersection;
+    //   // return { type: 'parallel-non-intersecting' };
+    // }
+
+    // // t = (q − p) × s / (r × s)
+    // // const t = cross(subtractPoints(targetOrigin, rayOrigin), targetDirection) / cross(direction, targetDirection);
+    // const t = targetStart.subtract(start).cross(targetDirection) / direction.cross(targetDirection);
+
+    // // u = (q − p) × r / (r × s)
+    // // const u = cross(subtractPoints(targetOrigin, rayOrigin), direction) / cross(direction, targetDirection);
+    // const u = targetStart.subtract(start).cross(direction) / direction.cross(targetDirection);
+
+    // if (!zeroish(r_s) && t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+    //   intersection.intersects = true;
+    //   intersection.time = t;
+    //   intersection.point = start.add(direction.multiply(intersection.time));
+    //   intersection.tangent = targetDirection.normalize();
+    //   intersection.normal = new Vector(-intersection.tangent.y, intersection.tangent.x);
+    //   console.log('Line intersection', intersection);
+    //   return intersection;
+    //   // return { type: 'intersection', ls0t: t, ls1u: u };
+    // }
+
+    // return intersection;
+    // // return { type: 'no-intersection' };
   }
 
   public clone(): Ray {
-    return new Ray(this.origin.clone(), this.directionVector.clone(), this.magnitude);
+    return new Ray(this.origin.clone(), this.normalizedDirection.clone(), this.magnitude);
   }
-    // public getIntersectionCircleOld(target: Circle): IIntersection {
+  // public getIntersectionCircleOld(target: Circle): IIntersection {
   //   // compute the euclidean distance between A and B
   //   // LAB = sqrt((Bx - Ax)²+(By - Ay)²)
 
@@ -526,3 +784,38 @@ export class Ray {
   //   */
   // }
 }
+
+const epsilon = 1 / 1000000;
+function zeroish(x: number) {
+  return Math.abs(x) < epsilon;
+}
+
+//////////////////////////////
+
+export function checkIntersection(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number) {
+  console.log(x1, y1, '->', x2, y2, 'vs', x3, y3, '->', x4, y4);
+
+  const denom = ((y4 - y3) * (x2 - x1)) - ((x4 - x3) * (y2 - y1));
+  const numeA = ((x4 - x3) * (y1 - y3)) - ((y4 - y3) * (x1 - x3));
+  const numeB = ((x2 - x1) * (y1 - y3)) - ((y2 - y1) * (x1 - x3));
+
+  if (denom === 0) {
+    if (numeA === 0 && numeB === 0) {
+      return null;
+    }
+    return null;
+  }
+
+  const uA = numeA / denom;
+  const uB = numeB / denom;
+
+  if (uA >= 0 && uA <= 1 && uB >= 0 && uB <= 1) {
+    return {
+      x: x1 + (uA * (x2 - x1)),
+      y: y1 + (uA * (y2 - y1))
+    };
+  }
+
+  return null;
+}
+

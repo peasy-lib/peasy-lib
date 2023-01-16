@@ -4,13 +4,18 @@ import { Rect } from './rect';
 import { RoundedRect } from './rounded-rect';
 import { Stadium } from './stadium';
 import { Vector } from '../vector';
+import { ExpandedRect } from './expanded-rect';
+import { Box } from '../box';
+import { ExpandedStadium } from './expanded-stadium';
 
-export class Circle {
+export class Circle extends GeometricShape {
   public constructor(
-    public position: Vector,
+    position: Vector,
     public radius: number,
-    public orientation = 0,
-  ) { }
+    orientation = 0,
+  ) {
+    super(position, orientation);
+  }
 
   public get size(): Vector {
     return new Vector(this.radius * 2, this.radius * 2);
@@ -20,16 +25,16 @@ export class Circle {
     return this.size.half;
   }
   public get left(): number {
-    return this.position.x - this.half.x;
+    return this.position.x - this.radius;
   }
   public get right(): number {
-    return this.position.x + this.half.x;
+    return this.position.x + this.radius;
   }
   public get top(): number {
-    return this.position.y - this.half.y;
+    return this.position.y - this.radius;
   }
   public get bottom(): number {
-    return this.position.y + this.half.y;
+    return this.position.y + this.radius;
   }
 
   public get area(): number {
@@ -40,12 +45,12 @@ export class Circle {
     return this.radius;
   }
 
-  public get boundingBox(): Rect {
-    return new Rect(this.position.clone(), new Vector(this.radius * 2, this.radius * 2));
+  public get boundingBox(): Box {
+    return new Box(new Vector(this.left, this.top), new Vector(this.right, this.bottom));
   }
 
-  public shapes(): GeometricShape[] {
-    return [];
+  public get shapes(): GeometricShape[] {
+    return [this];
   }
 
   public get vertices(): Vector[] {
@@ -69,18 +74,13 @@ export class Circle {
     this.position.add(position, true);
   }
 
-  public transform(degrees: number, position: Vector): void {
-    this.rotate(degrees);
-    this.translate(position);
-  }
-
   public overlaps(target: Rect | Circle | Stadium): boolean {
     const point = Point.from(this.position);
     const expanded = this.getSweptShape(target);
     return point.within(expanded);
   }
 
-  public getSweptShape(target: Rect | Circle | Stadium): Rect | Circle | Stadium | RoundedRect {
+  public getSweptShape(target: Rect | Circle | Stadium): Rect | Circle | Stadium | RoundedRect | ExpandedRect | ExpandedStadium {
     if (target instanceof Circle) {
       const expanded = target.clone();
       expanded.radius += this.radius;
@@ -95,8 +95,13 @@ export class Circle {
       return expanded;
     }
     if (target instanceof Rect) {
-      const expanded = new RoundedRect(target.position.clone(), target.size.add(new Vector(this.radius * 2, this.radius * 2)), this.radius);
+      // const expanded = new RoundedRect(target.position.clone(), target.size.add(new Vector(this.radius * 2, this.radius * 2)), this.radius);
+      // return expanded;
+      const expansion = this.clone();
+      expansion.position = new Vector();
+      const expanded = new ExpandedRect(target.position.clone(), target.size.clone(), expansion, target.orientation);
       return expanded;
+
       // const shapes: (Rect | Circle)[] = [];
 
       // let expanded: Rect | Circle = target.clone();
@@ -126,6 +131,15 @@ export class Circle {
       // return shapes;
     }
     return this;
+  }
+
+  public getEdgesVertex(edges: Vector[]): { vertex: Vector }[] {
+    const best: { vertex: Vector }[] = [];
+    const r = this.radius;
+    for (let i = 0, ii = edges.length; i < ii; i++) {
+      best.push({ vertex: this.position.add(edges[i].multiply(r)) });
+    }
+    return best;
   }
 
   public clone(): Circle {
