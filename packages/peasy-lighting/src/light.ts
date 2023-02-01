@@ -91,13 +91,13 @@ export class Light {
 
       this.#updated.add('size');
       this.#updated.add('position');
-      this.updates.size++;
+      // this.updates.size++;
       this.updates.position++;
       this.version++;
-      if (Array.isArray(this.#gradientSteps)) {
-        this.#updateGradient();
-        this.#updated.add('gradient');
-      }
+    }
+    if (Array.isArray(this.#gradientSteps)) {
+      this.#updateGradient();
+      this.#updated.add('gradient');
     }
   }
 
@@ -187,7 +187,7 @@ export class Light {
       this.#updated.add('position');
       this.#updated.add('gradient');
       this.#updated.add('color');
-      this.updates.size++;
+      // this.updates.size++;
       this.updates.position++;
       this.version++;
     }
