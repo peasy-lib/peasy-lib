@@ -11,5 +11,5 @@ export class PeasyEntity {
 
   // This is the entity that's actually being mutated
   // It's the object passed to static create (or the entity property of that object)
-  #entity: any;
+  private readonly _entity: any;
 }

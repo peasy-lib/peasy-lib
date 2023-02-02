@@ -20,117 +20,117 @@ export class Viewport {
   public updates: Record<string, number> = {
     position: 0,
   };
-  #updated: Set<string> = new Set();
+  private readonly _updated: Set<string> = new Set();
 
-  #size: Vector = new Vector();
-  #position: Vector = new Vector();
-  #calculatedPosition = true;
-  #color = 'black';
+  private _size: Vector = new Vector();
+  private _position: Vector = new Vector();
+  private _calculatedPosition = true;
+  private _color = 'black';
 
-  #root!: HTMLElement;
-  #customVail = false;
+  private _root!: HTMLElement;
+  private _customVail = false;
 
-  #useMask: boolean = false;
-  #addEntityMasks!: boolean;
+  private _useMask: boolean = false;
+  private _addEntityMasks!: boolean;
 
-  #entities: WeakMap<Entity, MaskEntity> = new WeakMap();
+  private readonly _entities: WeakMap<Entity, MaskEntity> = new WeakMap();
 
   public get size(): Vector {
-    return this.#size;
+    return this._size;
   }
   public set size(value: Vector) {
-    if (value.x === this.#size.x && value.y === this.#size.y) {
-      this.#size = value;
+    if (value.x === this._size.x && value.y === this._size.y) {
+      this._size = value;
       return;
     }
-    this.#size = value;
-    if (this.#calculatedPosition) {
-      this.#position = this.#size.divide(2);
-      // this.#updated.add('position');
+    this._size = value;
+    if (this._calculatedPosition) {
+      this._position = this._size.divide(2);
+      // this._updated.add('position');
       this.updates.position++;
       this.version++;
     }
   }
 
   public get width(): number {
-    return this.#size.x;
+    return this._size.x;
   }
   public set width(value: number) {
-    if (this.#size.x === value) {
+    if (this._size.x === value) {
       return;
     }
-    this.#size.x = value;
-    if (this.#calculatedPosition) {
-      this.#position = this.#size.divide(2);
-      // this.#updated.add('position');
+    this._size.x = value;
+    if (this._calculatedPosition) {
+      this._position = this._size.divide(2);
+      // this._updated.add('position');
       this.updates.position++;
       this.version++;
     }
   }
   public get height(): number {
-    return this.#size.y;
+    return this._size.y;
   }
   public set height(value: number) {
-    if (this.#size.y === value) {
+    if (this._size.y === value) {
       return;
     }
-    this.#size.y = value;
-    if (this.#calculatedPosition) {
-      this.#position = this.#size.divide(2);
-      // this.#updated.add('position');
+    this._size.y = value;
+    if (this._calculatedPosition) {
+      this._position = this._size.divide(2);
+      // this._updated.add('position');
       this.updates.position++;
       this.version++;
     }
   }
 
   public get position(): Vector {
-    return this.#position;
+    return this._position;
   }
   public set position(value: Vector) {
-    if (value.x === this.#position.x && value.y === this.#position.y) {
-      this.#position = value;
+    if (value.x === this._position.x && value.y === this._position.y) {
+      this._position = value;
       return;
     }
-    this.#position = value;
-    // this.#updated.add('position');
+    this._position = value;
+    // this._updated.add('position');
     this.updates.position++;
     this.version++;
   }
 
   public get x(): number {
-    return this.#position.x;
+    return this._position.x;
   }
   public set x(value: number) {
-    if (this.#position.x === value) {
+    if (this._position.x === value) {
       return;
     }
-    this.#position.x = value;
-    // this.#updated.add('position');
+    this._position.x = value;
+    // this._updated.add('position');
     this.updates.position++;
     this.version++;
   }
   public get y(): number {
-    return this.#position.y;
+    return this._position.y;
   }
   public set y(value: number) {
-    if (this.#position.y === value) {
+    if (this._position.y === value) {
       return;
     }
-    this.#position.y = value;
-    // this.#updated.add('position');
+    this._position.y = value;
+    // this._updated.add('position');
     this.updates.position++;
     this.version++;
   }
 
   public get color(): string {
-    return this.#color;
+    return this._color;
   }
   public set color(value: string) {
-    if (value === this.#color) {
+    if (value === this._color) {
       return;
     }
-    this.#color = value;
-    this.#updated.add('color');
+    this._color = value;
+    this._updated.add('color');
   }
 
   public static create(input: IViewport): Viewport {
@@ -143,8 +143,8 @@ export class Viewport {
     viewport.vail = input.vail as HTMLElement; // Can be undefined, which is fine
     viewport.mask = input.mask as HTMLElement; // Can be undefined, which is fine
 
-    viewport.#useMask = input.useMask ?? (input.mask != null ? true : viewport.#useMask);
-    viewport.#addEntityMasks = input.addEntityMasks ?? viewport.#useMask;
+    viewport._useMask = input.useMask ?? (input.mask != null ? true : viewport._useMask);
+    viewport._addEntityMasks = input.addEntityMasks ?? viewport._useMask;
 
     if (input.size != null) {
       viewport.size = input.size;
@@ -152,11 +152,11 @@ export class Viewport {
       const rect = viewport.element.getBoundingClientRect();
       viewport.size = new Vector(rect.width, rect.height);
     }
-    viewport.#position = input.position ?? viewport.#position;
-    viewport.#calculatedPosition = input.position == null;
+    viewport._position = input.position ?? viewport._position;
+    viewport._calculatedPosition = input.position == null;
 
-    viewport.#updated.add('position');
-    viewport.#updated.add('color');
+    viewport._updated.add('position');
+    viewport._updated.add('color');
     viewport.updates.position++;
     viewport.update();
 
@@ -168,46 +168,46 @@ export class Viewport {
       return;
     }
 
-    if (this.#root == null) {
-      this.#createElements();
+    if (this._root == null) {
+      this._createElements();
 
-      // this.#updated.add('position');
-      this.#updated.add('color');
+      // this._updated.add('position');
+      this._updated.add('color');
       this.updates.position++;
       this.version++;
     }
 
-    this.#updateProperties();
-    this.#updated.clear();
+    this._updateProperties();
+    this._updated.clear();
 
-    if (this.#addEntityMasks) {
+    if (this._addEntityMasks) {
       Lighting.entities.forEach((entity) => {
-        if (!this.#entities.has(entity)) {
-          this.#entities.set(entity, MaskEntity.create({ maskElement: this.mask, entity }));
+        if (!this._entities.has(entity)) {
+          this._entities.set(entity, MaskEntity.create({ maskElement: this.mask, entity }));
         }
-        this.#entities.get(entity)!.update();
+        this._entities.get(entity)!.update();
       });
     }
   }
 
-  #updateProperties(): void {
-    for (const update of this.#updated) {
+  private _updateProperties(): void {
+    for (const update of this._updated) {
       console.log('Updating viewport:', update);
       switch (update) {
         // case 'size':
-        //   this.#lightElement.style.width = `${this.#margin * 2}px`;
-        //   this.#lightElement.style.height = `${this.#margin * 2}px`;
+        //   this._lightElement.style.width = `${this._margin * 2}px`;
+        //   this._lightElement.style.height = `${this._margin * 2}px`;
         //   break;
         case 'color':
-          if (!this.#customVail) {
-            this.vail.style.backgroundColor = this.#color;
+          if (!this._customVail) {
+            this.vail.style.backgroundColor = this._color;
           }
           break;
       }
     }
   }
 
-  #createElements(): void {
+  private _createElements(): void {
     this.element.insertAdjacentHTML('beforeend', `
     <div class="peasy-lighting" style="
       display: inline-block;
@@ -218,12 +218,12 @@ export class Viewport {
       height: 100%;
       mix-blend-mode: multiply;
     "></div>`);
-    this.#root = this.element.lastElementChild as HTMLElement;
+    this._root = this.element.lastElementChild as HTMLElement;
 
     if (this.mask != null) {
-      this.#root.append(this.mask);
+      this._root.append(this.mask);
     } else {
-      this.#root.insertAdjacentHTML('beforeend', `
+      this._root.insertAdjacentHTML('beforeend', `
       <div class="peasy-lighting-mask" style="
         display: inline-block;
         position: absolute;
@@ -231,15 +231,15 @@ export class Viewport {
         top: 0px;
         width: 100%;
         height: 100%;
-        background-color: ${this.#useMask ? 'white' : 'black'};
+        background-color: ${this._useMask ? 'white' : 'black'};
       "></div>`);
-      this.mask = this.#root.lastElementChild as HTMLElement;
+      this.mask = this._root.lastElementChild as HTMLElement;
     }
     if (this.vail != null) {
-      this.#customVail = true;
-      this.#root.append(this.vail);
+      this._customVail = true;
+      this._root.append(this.vail);
     } else {
-      this.#root.insertAdjacentHTML('beforeend', `
+      this._root.insertAdjacentHTML('beforeend', `
       <div class="peasy-lighting-vail" style="
         display: inline-block;
         position: absolute;
@@ -247,10 +247,10 @@ export class Viewport {
         top: 0px;
         width: 100%;
         height: 100%;
-        background-color: ${this.#color};
+        background-color: ${this._color};
         mix-blend-mode: screen;
       "></div>`);
-      this.vail = this.#root.lastElementChild as HTMLElement;
+      this.vail = this._root.lastElementChild as HTMLElement;
     }
   }
 }

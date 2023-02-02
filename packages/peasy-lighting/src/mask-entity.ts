@@ -6,13 +6,13 @@ export interface IMaskEntity extends Partial<MaskEntity> {
 }
 
 export class MaskEntity {
-  #entity!: Entity;
-  #element!: HTMLElement;
+  private _entity!: Entity;
+  private _element!: HTMLElement;
 
-  #maskElement!: HTMLElement;
+  private _maskElement!: HTMLElement;
 
-  #entityVersion = 0;
-  #updates = {
+  private _entityVersion = 0;
+  private readonly _updates = {
     entity: {
       position: 0,
       orientation: 0,
@@ -23,42 +23,42 @@ export class MaskEntity {
     }
   };
 
-  #mask!: HTMLElement;
+  private _mask!: HTMLElement;
 
-  // #frontShadowElement!: HTMLElement;
-  // #frontShadowOpacityElement!: HTMLElement;
+  // _frontShadowElement!: HTMLElement;
+  // _frontShadowOpacityElement!: HTMLElement;
 
   public static create(input: IMaskEntity): MaskEntity {
     const maskEntity = new MaskEntity();
 
-    maskEntity.#entity = input.entity;
-    maskEntity.#maskElement = input.maskElement;
+    maskEntity._entity = input.entity;
+    maskEntity._maskElement = input.maskElement;
 
     return maskEntity;
   }
 
   public update(): void {
-    const entity = this.#entity;
+    const entity = this._entity;
     if (entity.normalMap == null) {
       return;
     }
 
-    if (this.#element == null) {
-      this.#createElements();
+    if (this._element == null) {
+      this._createElements();
     }
 
-    if (this.#entityVersion !== entity.version) {
-      this.#updateProperties();
+    if (this._entityVersion !== entity.version) {
+      this._updateProperties();
     }
   }
 
-  #updateProperties(): void {
-    const entity = this.#entity;
+  private _updateProperties(): void {
+    const entity = this._entity;
 
-    if (this.#entityVersion === entity.version) {
+    if (this._entityVersion === entity.version) {
       return;
     }
-    const entityUpdates = this.#updates.entity;
+    const entityUpdates = this._updates.entity;
 
     const updated = [];
     if (entityUpdates.size !== entity.updates.size) {
@@ -75,13 +75,13 @@ export class MaskEntity {
       updated.push('offset');
     }
 
-    this.#entityVersion = entity.version;
+    this._entityVersion = entity.version;
 
     if (updated.length === 0) {
       return;
     }
 
-    const style = this.#element.style;
+    const style = this._element.style;
 
     for (const update of updated) {
       switch (update) {
@@ -102,20 +102,20 @@ export class MaskEntity {
           break;
         }
         case 'scale':
-          this.#element.style.scale = entity.scale;
+          this._element.style.scale = entity.scale;
           entityUpdates.scale = entity.updates.scale;
           break;
         case 'offset':
-          this.#mask.style.backgroundPosition = `${entity.offset.x}px ${entity.offset.y}px`;
+          this._mask.style.backgroundPosition = `${entity.offset.x}px ${entity.offset.y}px`;
           entityUpdates.offset = entity.updates.offset;
           break;
       }
     }
   }
 
-  #createElements() {
-    const entity = this.#entity;
-    this.#maskElement.insertAdjacentHTML('beforeend', `
+  private _createElements() {
+    const entity = this._entity;
+    this._maskElement.insertAdjacentHTML('beforeend', `
       <div class="light-entity light-entity-${entity.id ?? ''}" style="
         display: inline-block;
         position: absolute;
@@ -129,9 +129,9 @@ export class MaskEntity {
         scale: ${entity.scale};
       ">
       </div>`);
-    this.#element = this.#maskElement.lastElementChild as HTMLElement;
+    this._element = this._maskElement.lastElementChild as HTMLElement;
 
-    this.#element.insertAdjacentHTML('beforeend', `
+    this._element.insertAdjacentHTML('beforeend', `
       <div class="normal-map" style="
         position: absolute;
         left: 0px;
@@ -143,10 +143,10 @@ export class MaskEntity {
         filter: brightness(0);
       "></div>
       `);
-    this.#mask = this.#element.lastElementChild as HTMLElement;
+    this._mask = this._element.lastElementChild as HTMLElement;
 
-    // this.#frontShadowElement = this.#element.lastElementChild as HTMLElement;
-    // this.#element.insertAdjacentHTML('beforeend', `
+    // this._frontShadowElement = this._element.lastElementChild as HTMLElement;
+    // this._element.insertAdjacentHTML('beforeend', `
     //   <div style="
     //     position: absolute;
     //     left: 0px;
@@ -157,7 +157,7 @@ export class MaskEntity {
     //     filter: brightness(0) blur(2px) drop-shadow(0px 0px 2px white);
     //   "></div>
     //   `);
-    // this.#frontShadowOpacityElement = this.#element.lastElementChild as HTMLElement;
+    // this._frontShadowOpacityElement = this._element.lastElementChild as HTMLElement;
   }
 }
 

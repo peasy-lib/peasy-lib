@@ -8,7 +8,7 @@ export class Lighting {
   public static viewports: Set<Viewport> = new Set();
 
   public static initialize(element: HTMLElement = document.body): void {
-    Lighting.#createElements(element);
+    Lighting._createElements(element);
   }
 
   public static update() {
@@ -74,7 +74,7 @@ export class Lighting {
     Lighting.viewports.delete(vp);
   }
 
-  static #createElements(element: HTMLElement): void {
+  private static _createElements(element: HTMLElement): void {
     element.insertAdjacentHTML('beforeend', `<svg style="display: none;">
       <filter id="red-filter" color-interpolation-filters="sRGB"
               x="0" y="0" height="100%" width="100%">

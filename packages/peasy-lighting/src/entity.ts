@@ -32,68 +32,68 @@ export class Entity {
     offset: 0,
   };
 
-  #position: Vector;
-  #orientation = 0;
+  private _position: Vector;
+  private _orientation = 0;
   private _scale = '1';
-  #zIndex = 0;
+  private _zIndex = 0;
   public normalMap!: string;
-  #size: Vector = new Vector();
-  #offset: Vector = new Vector();
+  private _size: Vector = new Vector();
+  private _offset: Vector = new Vector();
 
-  #element!: HTMLElement;
+  private readonly _element!: HTMLElement;
 
   public get position(): Vector {
-    return this.#position;
+    return this._position;
   }
   public set position(value: IVector) {
-    if (value.x === this.#position.x && value.y === this.#position.y) {
+    if (value.x === this._position.x && value.y === this._position.y) {
       if (value instanceof Vector) {
-        this.#position = value;
+        this._position = value;
       }
       return;
     }
-    this.#position = value instanceof Vector ? value : new Vector(value.x, value.y);
-    this.left = `${this.#position.x - (this.size?.x / 2)}px`;
-    this.top = `${this.#position.y - (this.size?.y / 2)}px`;
+    this._position = value instanceof Vector ? value : new Vector(value.x, value.y);
+    this.left = `${this._position.x - (this.size?.x / 2)}px`;
+    this.top = `${this._position.y - (this.size?.y / 2)}px`;
     this.updates.position++;
     this.version++;
   }
 
   /* Not sure whether this is needed/useful
   public get x(): number {
-    return this.#position.x;
+    return this._position.x;
   }
   public set x(value: number) {
-    if (this.#position.x === value) {
+    if (this._position.x === value) {
       return;
     }
-    this.#position.x = value;
-    this.left = `${this.#position.x - (this.size?.x / 2)}px`;
+    this._position.x = value;
+    this.left = `${this._position.x - (this.size?.x / 2)}px`;
     this.updates.position++;
     this.version++;
   }
   public get y(): number {
-    return this.#position.y;
+    return this._position.y;
   }
   public set y(value: number) {
-    if (this.#position.y === value) {
+    if (this._position.y === value) {
       return;
     }
-    this.#position.y = value;
-    this.top = `${this.#position.y - (this.size?.y / 2)}px`;
+    this._position.y = value;
+    this.top = `${this._position.y - (this.size?.y / 2)}px`;
     this.updates.position++;
     this.version++;
   }
   */
 
   public get orientation(): number {
-    return this.#orientation;
+    return this._orientation;
   }
   public set orientation(value: number) {
-    if (this.#orientation === value) {
+    if (this._orientation === value) {
       return;
     }
-    this.#orientation = value;
+    this._orientation = value;
     this.updates.orientation++;
     this.version++;
   }
@@ -111,51 +111,51 @@ export class Entity {
   }
 
   public get zIndex(): number {
-    return this.#zIndex;
+    return this._zIndex;
   }
   public set zIndex(value: number) {
-    if (this.#zIndex === value) {
+    if (this._zIndex === value) {
       return;
     }
-    this.#zIndex = value;
+    this._zIndex = value;
     this.updates.zIndex++;
     this.version++;
   }
 
   public get size(): Vector {
-    return this.#size;
+    return this._size;
   }
   public set size(value: IVector) {
-    if (value.x === this.#size.x && value.y === this.#size.y) {
+    if (value.x === this._size.x && value.y === this._size.y) {
       if (value instanceof Vector) {
-        this.#size = value;
+        this._size = value;
       }
       return;
     }
-    this.#size = value instanceof Vector ? value : new Vector(value.x, value.y);
-    this.left = `${this.#position.x - (this.size?.x / 2)}px`;
-    this.top = `${this.#position.y - (this.size?.y / 2)}px`;
+    this._size = value instanceof Vector ? value : new Vector(value.x, value.y);
+    this.left = `${this._position.x - (this.size?.x / 2)}px`;
+    this.top = `${this._position.y - (this.size?.y / 2)}px`;
     this.updates.size++;
     this.version++;
   }
 
   public get offset(): Vector {
-    return this.#offset;
+    return this._offset;
   }
   public set offset(value: IVector) {
-    if (value.x === this.#offset.x && value.y === this.#offset.y) {
+    if (value.x === this._offset.x && value.y === this._offset.y) {
       if (value instanceof Vector) {
-        this.#offset = value;
+        this._offset = value;
       }
       return;
     }
-    this.#offset = value instanceof Vector ? value : new Vector(value.x, value.y);
+    this._offset = value instanceof Vector ? value : new Vector(value.x, value.y);
     this.updates.offset++;
     this.version++;
   }
 
   private constructor() {
-    this.#position = new Vector();
+    this._position = new Vector();
   }
 
   public static create(input: IEntity | IExternalEntity): Entity {
@@ -165,9 +165,9 @@ export class Entity {
 
     entity.id = entity.entity.id as string;
     entity.position = new Vector(entity.entity.position.x, entity.entity.position.y);
-    entity.orientation = input.orientation ?? entity.#orientation;
+    entity.orientation = input.orientation ?? entity._orientation;
     entity.scale = input.scale ?? entity._scale;
-    entity.zIndex = input.zIndex ?? entity.#zIndex;
+    entity.zIndex = input.zIndex ?? entity._zIndex;
     entity.normalMap = (input as IEntity).normalMap ?? entity.normalMap;
     entity.size = new Vector(entity.entity.position.x, entity.entity.position.y);
     entity.offset = (input as IEntity).offset ?? entity.offset;
