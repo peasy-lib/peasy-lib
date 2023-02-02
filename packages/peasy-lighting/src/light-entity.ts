@@ -201,7 +201,7 @@ export class LightEntity {
     const entity = this.#entity;
     const light = this.#light;
     light.containerElement.insertAdjacentHTML('beforeend', `
-      <div class="light-entity" style="
+      <div class="light-entity light-entity-${entity.id ?? ''}" style="
         display: inline-block;
         position: absolute;
         left: 0px;
@@ -217,18 +217,18 @@ export class LightEntity {
           position: absolute;
           left: 0px;
           top: 0px;
-          width: ${entity.size.x}px;
-          height: ${entity.size.x}px;
+          width: 100%;
+          height: 100%;
           mix-blend-mode: lighten;
           filter: url(${this.#redFilter});
           opacity: ${this.#redOpacity};
         ">
-          <div style="
+          <div class="normal-map" style="
             position: absolute;
             left: 0px;
             top: 0px;
-            width: ${entity.size.x}px;
-            height: ${entity.size.x}px;
+            width: 100%;
+            height: 100%;
             background-image: url(${entity.normalMap});
             background-position: ${entity.offset.x}px ${entity.offset.y}px;
           "></div>
@@ -237,18 +237,18 @@ export class LightEntity {
             position: absolute;
             left: 0px;
             top: 0px;
-            width: ${entity.size.x}px;
-            height: ${entity.size.x}px;
+            width: 100%;
+            height: 100%;
             mix-blend-mode: lighten;
             filter: url(${this.#greenFilter});
             opacity: ${this.#greenOpacity};
         ">
-          <div style="
+          <div class="normal-map" style="
             position: absolute;
             left: 0px;
             top: 0px;
-            width: ${entity.size.x}px;
-            height: ${entity.size.x}px;
+            width: 100%;
+            height: 100%;
             background-image: url(${entity.normalMap});
             background-position: ${entity.offset.x}px ${entity.offset.y}px;
           "></div>
@@ -257,18 +257,18 @@ export class LightEntity {
             position: absolute;
             left: 0px;
             top: 0px;
-            width: ${entity.size.x}px;
-            height: ${entity.size.x}px;
+            width: 100%;
+            height: 100%;
             mix-blend-mode: lighten;
             filter: url(${this.#blueFilter});
             opacity: ${this.#blueOpacity};
         ">
-          <div style="
+          <div class="normal-map" style="
             position: absolute;
             left: 0px;
             top: 0px;
-            width: ${entity.size.x}px;
-            height: ${entity.size.x}px;
+            width: 100%;
+            height: 100%;
             background-image: url(${entity.normalMap});
             background-position: ${entity.offset.x}px ${entity.offset.y}px;
           "></div>
@@ -280,26 +280,26 @@ export class LightEntity {
       element.firstElementChild) as HTMLElement[];
 
     this.#element.insertAdjacentHTML('beforeend', `
-      <div style="
+      <div class="normal-map" style="
         position: absolute;
         left: 0px;
         top: 0px;
-        width: ${entity.size.x}px;
-        height: ${entity.size.x}px;
+        width: 100%;
+        height: 100%;
         background-image: url(${entity.normalMap});
         background-position: ${entity.offset.x}px ${entity.offset.y}px;
         filter: brightness(0);
         opacity: ${this.#frontShadowVisibility};
-      "></div>
+        "></div>
       `);
     this.#frontShadowElement = this.#element.lastElementChild as HTMLElement;
     this.#element.insertAdjacentHTML('beforeend', `
-      <div style="
+      <div class="normal-map" style="
         position: absolute;
         left: 0px;
         top: 0px;
-        width: ${entity.size.x}px;
-        height: ${entity.size.x}px;
+        width: 100%;
+        height: 100%;
         background-image: url(${entity.normalMap});
         background-position: ${entity.offset.x}px ${entity.offset.y}px;
         filter: brightness(0) blur(2px) drop-shadow(0px 0px 2px white);

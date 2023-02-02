@@ -116,7 +116,7 @@ export class MaskEntity {
   #createElements() {
     const entity = this.#entity;
     this.#maskElement.insertAdjacentHTML('beforeend', `
-      <div class="light-entity" style="
+      <div class="light-entity light-entity-${entity.id ?? ''}" style="
         display: inline-block;
         position: absolute;
         left: 0px;
@@ -132,7 +132,7 @@ export class MaskEntity {
     this.#element = this.#maskElement.lastElementChild as HTMLElement;
 
     this.#element.insertAdjacentHTML('beforeend', `
-      <div style="
+      <div class="normal-map" style="
         position: absolute;
         left: 0px;
         top: 0px;
