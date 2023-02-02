@@ -12,6 +12,7 @@ export interface IExternalEntity {
   scale?: string;
   zIndex?: number;
   offset?: IVector;
+  id?: string;
 }
 
 export class Entity {
@@ -162,7 +163,7 @@ export class Entity {
 
     entity.entity = (input as IEntity).entity ?? input as IExternalEntity;
 
-    entity.id = (input as IEntity).id as string;
+    entity.id = entity.entity.id as string;
     entity.position = new Vector(entity.entity.position.x, entity.entity.position.y);
     entity.orientation = input.orientation ?? entity.#orientation;
     entity.scale = input.scale ?? entity._scale;
