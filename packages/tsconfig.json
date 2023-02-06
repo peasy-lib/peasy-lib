@@ -4,6 +4,7 @@
     { "path": "peasy-ui" },
     { "path": "peasy-lighting" },
     { "path": "peasy-input" },
-    { "path": "peasy-physics" }
+    { "path": "peasy-physics" },
+    { "path": "peasy-assets" }
   ]
 }

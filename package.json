@@ -7,11 +7,15 @@
     "packages/peasy-lighting",
     "packages/peasy-input",
     "packages/peasy-physics",
+    "packages/peasy-assets",
 
     "examples/ui-demo",
     "examples/lighting-demo",
     "examples/input-demo",
-    "examples/physics-demo"
+    "examples/physics-demo",
+    "examples/assets-demo",
+
+    "examples/platformer-tutorial-1"
   ],
   "license": "UNLICENSED",
   "engines": {

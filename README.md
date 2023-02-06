@@ -13,7 +13,8 @@ The following packages are part of Peasy Lib:
 * [peasy-ui](packages/peasy-ui/README.md) - A small and easy to use UI binding library.
 * [peasy-lighting](packages/peasy-lighting/README.md) - An easy to use lighting library.
 * [peasy-input](packages/peasy-input/README.md) - An easy to use input library.
-* [peasy-input](packages/peasy-physics/README.md) - An easy to use physics library.
+* [peasy-physics](packages/peasy-physics/README.md) - An easy to use physics library.
+* [peasy-assets](packages/peasy-assets/README.md) - An easy to use assets library.
 
 ## Acknowledgements
 
