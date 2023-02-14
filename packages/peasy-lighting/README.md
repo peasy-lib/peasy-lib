@@ -8,7 +8,7 @@ Peasy Lighting provides uncomplicated Lighting for HTML. It's intended to be use
 
 ## First look
 
-In Peasy Lighting one or more lighting layers are added on top of existing graphics in an element serving as viewport. Peasy Lighting only requires light sources to be added, but by providing informaton about entities more advanced features such as shadows can be used.
+In Peasy Lighting one or more lighting layers are added on top of existing graphics in an element serving as viewport. Peasy Lighting only requires light sources to be added, but by providing informaton about entities more advanced features such as layered lighting and shadows can be used.
 
 ```html
 <div id="my-viewport" style="position: relative">
@@ -16,12 +16,16 @@ In Peasy Lighting one or more lighting layers are added on top of existing graph
 </div>
 ```
 ```ts
-// Add a light source
-const light = Lighting.addLight({
-    position: new Vector(150, 150),
+// Create an object for the light source (can be an existing object such as player)
+const light = {
+    position: { x: 150, y: 150 },
     radius: 250,
     color: 'red',
-    viewport: document.querySelector('#my-viewport'),
+};
+// Add the light source
+const light = Lighting.addLight({
+  entity: light,
+  viewport: document.querySelector('#my-viewport'),
 });
 // Render the light source
 Lighting.update();
@@ -29,8 +33,8 @@ Lighting.update();
 // Move the light source
 light.position.x = 200;
 light.position.y = 250;
-light.position.radius = 200;
-light.position.color = 'green';
+light.radius = 200;
+light.color = 'green';
 
 // Render the moved light source
 Lighting.update();
@@ -60,9 +64,9 @@ If you don't have a build process or don't want to install it, use a `script` ta
   <script type="module">
     import { Lighting } from "https://cdn.skypack.dev/@peasy-lib/peasy-lighting";
 
-    // Add a light source
-    const light = Lighting.addLight({
-        position: new Vector(150, 150),
+    // Add a static light source
+    Lighting.addLight({
+        position: { x: 150, y: 150 },
         radius: 250,
         color: 'red',
         viewport: document.querySelector('#my-viewport'),

@@ -216,6 +216,7 @@ export class Viewport {
       top: 0px;
       width: 100%;
       height: 100%;
+      pointer-events: none;
       mix-blend-mode: multiply;
     "></div>`);
     this._root = this.element.lastElementChild as HTMLElement;
