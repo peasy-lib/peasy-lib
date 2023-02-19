@@ -5,15 +5,18 @@ export interface IAssets {
 export interface IAsset {
   src?: string;
   name?: string;
-  type?: 'image' | 'audio';
+  family?: string;
+  descriptors?: any;
+  type?: 'image' | 'audio' | 'font';
 }
 
 export class Assets {
   private static initialized = false;
   public static sources: Record<string, string> = { default: '/assets/' };
-  public static assets: { image: Record<string, HTMLImageElement>; audio: Record<string, HTMLMediaElement> } = {
+  public static assets: { image: Record<string, HTMLImageElement>; audio: Record<string, HTMLMediaElement>; font: Record<string, FontFace> } = {
     image: {},
     audio: {},
+    font: {},
   };
 
   public static types: Record<string, string> = {
@@ -33,6 +36,7 @@ export class Assets {
   public static loaders: Record<string, any> = {
     image: Assets.loadImage,
     audio: Assets.loadAudio,
+    font: Assets.loadFont,
   };
 
   public static initialize(input: IAssets = {}) {
@@ -48,19 +52,24 @@ export class Assets {
         asset = { src: asset };
       }
       const src = `${Assets.sources.default}${asset.src ?? ''}`;
-      const type = Assets.types[asset.type ?? src.split('.').pop() ?? ''] as 'image' | 'audio';
+      const type = asset.family != null ? 'font'
+        : Assets.types[asset.type ?? src.split('.').pop() ?? ''] as 'image' | 'audio';
       const loader = Assets.loaders[type];
       if (loader == null) {
         return null;
       }
       let name = asset.name;
       if (name == null) {
-        name = src.split('/').pop() ?? '';
-        const parts = name.split('.');
-        parts.pop();
-        name = parts.join('.');
+        if (type === 'font') {
+          name = asset.family!;
+        } else {
+          name = src.split('/').pop() ?? '';
+          const parts = name.split('.');
+          parts.pop();
+          name = parts.join('.');
+        }
       }
-      const promise = loader(src);
+      const promise = loader(src, asset);
       Assets.assets[type][name] = await promise;
       return promise;
     }));
@@ -71,6 +80,9 @@ export class Assets {
   }
   public static audio(name: string): HTMLMediaElement {
     return Assets.assets.audio[name];
+  }
+  public static font(name: string): FontFace {
+    return Assets.assets.font[name];
   }
 
   public static loadImage(url: string): Promise<HTMLImageElement> {
@@ -89,6 +101,18 @@ export class Assets {
       audio.addEventListener('progress', (...args) => console.log('progress', args));
       audio.oncanplaythrough = () => resolve(audio);
       audio.src = url;
+    });
+  }
+
+  public static loadFont(url: string, asset: IAsset): Promise<FontFace> {
+    if (!url.startsWith('url(')) {
+      url = `url(${url})`;
+    }
+    return new Promise(async (resolve) => {
+      const font = new FontFace(asset.family!, url, asset.descriptors ?? {});
+      await font.load();
+      document.fonts.add(font);
+      resolve(font);
     });
   }
 }

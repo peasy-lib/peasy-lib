@@ -10,18 +10,20 @@ async function main(): Promise<void> {
 
   const uiElement = document.querySelector('#ui');
   const butlerElement = document.querySelector('#butler') as HTMLImageElement;
+  const fontElement = document.querySelector('#font-test') as HTMLDivElement;
 
   alert('Start load');
 
-  // await Assets.load(['butler.png', 'Tileset.png', { src: 'butler.png', name: 'butler2' }, 'mario-coin.mp3', { src: 'motivation-epic-inspire.mp3', name: 'music' }]);
-  await Assets.load(['butler.png', 'Tileset.png', { src: 'butler.png', name: 'butler2' }]);
+  await Assets.load(['butler.png', 'Tileset.png', { src: 'butler.png', name: 'butler2' }, { name: 'space', family: 'Viper Squadron', src: 'VIPESRG.woff' }]);
+  // Assets.load(['butler.png', 'Tileset.png', { src: 'butler.png', name: 'butler2' }, { name: 'space', family: 'Viper Squadron', src: 'VIPESRG.woff' }]);
 
-  console.log('Sync', Assets.image('butler'), Assets.image('Tileset'), Assets.image('butler'), Assets.audio('mario-coin'));
+  console.log('Sync', Assets.image('butler'), Assets.image('Tileset'), Assets.image('butler'), Assets.audio('mario-coin'), Assets.font('Viper Squadron'));
 
   try {
     // These only work if awaited
     butlerElement.src = Assets.image('butler').src;
     uiElement.appendChild(Assets.image('Tileset'));
+    fontElement.style.fontFamily = Assets.font('space').family;
 
     // Assets.audio('mario-coin').play();
   } catch (e) {
@@ -34,6 +36,7 @@ async function main(): Promise<void> {
     // These always work since the assets have been loaded during timeout
     butlerElement.src = Assets.image('butler').src;
     uiElement.appendChild(Assets.image('butler2'));
+    fontElement.style.fontFamily = Assets.font('space').family;
     // Assets.audio('music').play();
   }, 2000);
 }
