@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 import { UIView } from './ui-view';
 import { UI } from "./ui";
 
@@ -140,7 +141,6 @@ export class UIBinding {
       return;
     }
     let value = UI.resolveValue(this.object, this.property!);
-    let listChanged = false;
     if (this.template != null) { // Component, conditional or iterator
       if (this.template instanceof HTMLElement) { // Conditional or iterator
         if (typeof this.attribute === 'boolean') { // Conditional
@@ -160,6 +160,8 @@ export class UIBinding {
             }
           }
         } else { // Iterator
+          let listChanged = false;
+          let listItemsChanged = false;
           if (value == null) {
             value = [];
           }
@@ -171,33 +173,53 @@ export class UIBinding {
             for (let i = 0, ii = value.length; i < ii; i++) {
               let v, lv;
               if (key == null) {
-                v = value[i];
-                lv = lastValue[i];
+                if (value[i] !== lastValue[i]) {
+                  listChanged = true;
+                  listItemsChanged = true;
+                }
               } else {
                 v = UI.resolveValue(value[i] ?? {}, key);
                 lv = UI.resolveValue(lastValue[i] ?? {}, key);
-              }
-              if (v !== lv) {
-                listChanged = true;
-                break;
+                if (v !== lv) {
+                  listChanged = true;
+                }
+                if (value[i] !== lastValue[i]) {
+                  listItemsChanged = true;
+                }
               }
             }
-          }
-          if (!listChanged) {
-            this.views.forEach(view => view.updateToUI());
-            if (this.oneTime) {
-              this.oneTimeDone();
-            }
-            return;
           }
 
-          const uiValue = this.toUI !== true ? (this.toUI as toUICallback)(value, lastValue, this.property!, this.object) : value;
-          if (uiValue == null) {
-            this.views.forEach(view => view.updateToUI());
-            if (this.oneTime) {
-              this.oneTimeDone();
+          if (!listChanged) {
+            if (!listItemsChanged) {
+              return this.updateViews();
+              // this.views.forEach(view => view.updateToUI());
+            } else {
+              const uiValue = this.toUI !== true ? this.toUI(value, lastValue, this.property!, this.object) : value;
+              return this.updateViews(uiValue);
+              // this.views.forEach((view, index) => {
+              //   const item = uiValue[index];
+              //   if (typeof item !== 'string') {
+              //     item.$index = index;
+              //   }
+              //   view.model.$model[this.attribute] = item;
+              //   view.updateToUI();
+              // });
             }
-            return;
+            // if (this.oneTime) {
+            //   this.oneTimeDone();
+            // }
+            // return;
+          }
+
+          const uiValue = this.toUI !== true ? this.toUI(value, lastValue, this.property!, this.object) : value;
+          if (uiValue == null) {
+            return this.updateViews();
+            // this.views.forEach(view => view.updateToUI());
+            // if (this.oneTime) {
+            //   this.oneTimeDone();
+            // }
+            // return;
           }
           const lastUIValue = this.lastUIValue ?? [];
           let same = 0;
@@ -212,27 +234,34 @@ export class UIBinding {
             }
             if (v === lv) {
               same++;
-            }
-            else {
+            } else {
               break;
             }
           }
           if (same === uiValue.length && uiValue.length === lastUIValue.length) {
-            this.views.forEach(view => view.updateToUI());
-            if (this.oneTime) {
-              this.oneTimeDone();
-            }
-            return;
+            return this.updateViews(uiValue);
+            // this.views.forEach((view, index) => {
+            //   const item = uiValue[index];
+            //   if (typeof item !== 'string') {
+            //     item.$index = index;
+            //   }
+            //   view.model.$model[this.attribute] = item;
+            //   view.updateToUI();
+            // });
+            // if (this.oneTime) {
+            //   this.oneTimeDone();
+            // }
+            // return;
           }
           const views = this.views.splice(0, same);
           let lastDoneUI = views[views.length - 1];
 
           for (let i = same, ii = uiValue.length, j = same; i < ii; i++, j++) {
             const item = uiValue[i];
-            if (typeof item !== 'string') {
-              item.$index = i;
-            }
-            // const lastDoneUI = views[views.length - 1];
+            // if (typeof item !== 'string') {
+            //   item.$index = i;
+            // }
+            // // const lastDoneUI = views[views.length - 1];
             const view = this.views.shift();
             // New view
             if (view == null) {
@@ -290,6 +319,8 @@ export class UIBinding {
           this.views = views;
           this.lastValue = [...value];
           this.lastUIValue = [...uiValue];
+
+          return this.updateViews(uiValue);
         }
       } else { // Component
         if (this.value == null) {
@@ -312,19 +343,10 @@ export class UIBinding {
         }
       }
     }
-    this.views.forEach(view => view.updateToUI());
-    if (this.oneTime) {
-      this.oneTimeDone();
-    }
-  }
-
-  public oneTimeDone(): void {
-    this.toUI = false;
-    this.fromUI = false;
-    // if (this.views.length === 0 && // Only remove bindings without children
-    //   this.template == null || typeof this.attribute !== 'boolean' // NOT Conditional
-    // ) {
-    //   this.unbind();
+    this.updateViews();
+    // this.views.forEach(view => view.updateToUI());
+    // if (this.oneTime) {
+    //   this.oneTimeDone();
     // }
   }
 
@@ -344,8 +366,36 @@ export class UIBinding {
     this.views.forEach(view => view.updateMove());
   }
 
-  triggerAtEvent = (event: any): void => {
+  public triggerAtEvent = (event: any): void => {
     // console.log('TRIGGERED', this.attribute, event, this.object);
     this.events.push(event);
+  };
+
+  private updateViews(value?: any[]): void {
+    if (value == null) {
+      this.views.forEach(view => view.updateToUI());
+    } else {
+      this.views.forEach((view, index) => {
+        const item = value[index];
+        if (typeof item !== 'string') {
+          item.$index = index;
+        }
+        view.model.$model[this.attribute] = item;
+        view.updateToUI();
+      });
+    }
+    if (this.oneTime) {
+      this.oneTimeDone();
+    }
+  }
+
+  private oneTimeDone(): void {
+    this.toUI = false;
+    this.fromUI = false;
+    // if (this.views.length === 0 && // Only remove bindings without children
+    //   this.template == null || typeof this.attribute !== 'boolean' // NOT Conditional
+    // ) {
+    //   this.unbind();
+    // }
   }
 }

@@ -65,6 +65,67 @@ function main3() {
 }
 
 
+async function main2(): Promise<void> {
+  console.log('Hello, World!');
+
+  let index = 0;
+
+  UI.initialize();
+  model = {
+    branches: <any>[],
+    currentBranch: 0,
+    get branch() {
+      return this.branches[this.currentBranch];
+    },
+    get getGetData() {
+      return this.branches;
+    },
+    get getConditions() {
+      const conditions = this.branch.conditions;
+      return Object.keys(conditions).map(id => {
+        return { id, key: `${id}:${conditions[id]}`, entry: conditions[id] };
+      });
+    },
+    insertData: (_event: any, model: any) => {
+      model.branches.push({
+        id: index,
+        conditions: {},
+      });
+    },
+    insertCondition: (_event: any, model: any) => {
+      const key = window.prompt("insert key");
+      if (key) model.branch.conditions[key] = false;
+    },
+    toggleFlag: (event: any, model: any, element: HTMLElement, _attribute: any, object: any) => {
+      debugger;
+      const key = element.getAttribute("data-key");
+      console.log(key);
+
+      console.log(object.$parent.$parent.$model);
+
+      object.$parent.$parent.$model.branch.conditions[<string>key] = !object.$parent.$parent.$model.branch.conditions[<string>key];
+
+      console.log(object.$parent.$parent.$model.branch.conditions[<string>key]);
+    },
+  };
+
+  UI.create(document.body, `
+  <div>
+    <a href="#" \${click@=>insertData}>Insert New Data</a>
+    <a href="#" \${click@=>insertCondition}>Insert New Condition</a>
+    <div \${d<=*getGetData}>
+      Conditions:
+      <div style="width: 200px; border: 1px solid white; display: flex; justify-content: space-evenly; align-items: flex-start" \${c<=*getConditions:id}>
+        <div>\${c.id}</div>
+        <span>:</span>
+        <div>\${c.entry}</div>
+        <a href="#"  \${click@=>toggleFlag} data-key="\${c.id}">Toggle Flag</a>
+      </div>
+
+    </div>
+  </div>
+   `, model);
+}
 
 
 
@@ -87,6 +148,7 @@ async function main(): Promise<void> {
       { name: 'qwer', colors: [{ c: 'blue' }, { c: 'yellow' }] },
     ],
     color: 'lightgray',
+    textareaMessage: 'This is the message in the textarea',
     drawerMessage: 'Any kind of message',
     message: '',
     transitionDuration: 0,
@@ -199,6 +261,7 @@ async function main(): Promise<void> {
       <div><input \${value<=>myIndex} name="source" type="number" min="1" max="4">: \${myIndex}</div>
       <div>Color: <input \${value <=> color}> <span>The color is <b>\${color}</b>.</span> <button \${click @=> clicked} \${disabled <== hasNoColor}>Set to gold</button></div>
       <div>Message: <input \${value <=> drawerMessage}> <button \${click @=> setMessage}>Show message</button></div>
+      <div>Text: <textarea \${value <=> textareaMessage}>Textarea</textarea> \${textareaMessage}</div>
       <div>Checks: <label><input type="checkbox" \${checked <=> left}> Left</label> <label><input type="checkbox" \${checked <=> right}> Right</label> <b>\${left} \${right} <span \${ === left}> Left </span> <span \${ !== right}> Not right </span></b>  <span \${ !== undef}> Undefined </span>  <span \${ === undef}> Not Undefined </span></div>
       <div>Demo:
         <label><input type="radio" name="demo" \${'card' ==> demo} \${change @=> changed}>Card</label>
@@ -253,6 +316,7 @@ async function main(): Promise<void> {
   demoUI = await selectDemo(model, demoUI);
 
   setTimeout(() => model.color = 'blue', 2000);
+  setTimeout(() => model.textareaMessage = 'This is an UPDATED textarea message', 2500);
 
   setTimeout(() => model.undef = 'defined', 3000);
   // setTimeout(() => {
