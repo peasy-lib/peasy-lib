@@ -1,4 +1,3 @@
-/* eslint-disable max-lines-per-function */
 import { UIView } from './ui-view';
 import { UI } from "./ui";
 
@@ -193,33 +192,15 @@ export class UIBinding {
           if (!listChanged) {
             if (!listItemsChanged) {
               return this.updateViews();
-              // this.views.forEach(view => view.updateToUI());
             } else {
               const uiValue = this.toUI !== true ? this.toUI(value, lastValue, this.property!, this.object) : value;
               return this.updateViews(uiValue);
-              // this.views.forEach((view, index) => {
-              //   const item = uiValue[index];
-              //   if (typeof item !== 'string') {
-              //     item.$index = index;
-              //   }
-              //   view.model.$model[this.attribute] = item;
-              //   view.updateToUI();
-              // });
             }
-            // if (this.oneTime) {
-            //   this.oneTimeDone();
-            // }
-            // return;
           }
 
           const uiValue = this.toUI !== true ? this.toUI(value, lastValue, this.property!, this.object) : value;
           if (uiValue == null) {
             return this.updateViews();
-            // this.views.forEach(view => view.updateToUI());
-            // if (this.oneTime) {
-            //   this.oneTimeDone();
-            // }
-            // return;
           }
           const lastUIValue = this.lastUIValue ?? [];
           let same = 0;
@@ -240,28 +221,13 @@ export class UIBinding {
           }
           if (same === uiValue.length && uiValue.length === lastUIValue.length) {
             return this.updateViews(uiValue);
-            // this.views.forEach((view, index) => {
-            //   const item = uiValue[index];
-            //   if (typeof item !== 'string') {
-            //     item.$index = index;
-            //   }
-            //   view.model.$model[this.attribute] = item;
-            //   view.updateToUI();
-            // });
-            // if (this.oneTime) {
-            //   this.oneTimeDone();
-            // }
-            // return;
           }
           const views = this.views.splice(0, same);
           let lastDoneUI = views[views.length - 1];
 
           for (let i = same, ii = uiValue.length, j = same; i < ii; i++, j++) {
             const item = uiValue[i];
-            // if (typeof item !== 'string') {
-            //   item.$index = i;
-            // }
-            // // const lastDoneUI = views[views.length - 1];
+            // const lastDoneUI = views[views.length - 1];
             const view = this.views.shift();
             // New view
             if (view == null) {
@@ -344,10 +310,6 @@ export class UIBinding {
       }
     }
     this.updateViews();
-    // this.views.forEach(view => view.updateToUI());
-    // if (this.oneTime) {
-    //   this.oneTimeDone();
-    // }
   }
 
   public updateAtEvents(): void {
@@ -385,17 +347,8 @@ export class UIBinding {
       });
     }
     if (this.oneTime) {
-      this.oneTimeDone();
+      this.toUI = false;
+      this.fromUI = false;
     }
-  }
-
-  private oneTimeDone(): void {
-    this.toUI = false;
-    this.fromUI = false;
-    // if (this.views.length === 0 && // Only remove bindings without children
-    //   this.template == null || typeof this.attribute !== 'boolean' // NOT Conditional
-    // ) {
-    //   this.unbind();
-    // }
   }
 }
