@@ -73,6 +73,15 @@ input {
   transition: opacity 300ms ease-in-out;
 }
 
+.light-mode {
+  background-color: white;
+  color: black;
+}
+.dark-mode {
+  background-color: black;
+  color: white;
+}
+
 .ball {
   display: inline-block;
   position: absolute;
@@ -282,7 +291,7 @@ input {
   }
 }
 
-/* 
+/*
 .slots {
   position:relative;
   border: 1px solid black;

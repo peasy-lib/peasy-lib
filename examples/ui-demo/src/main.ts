@@ -127,6 +127,24 @@ async function main2(): Promise<void> {
    `, model);
 }
 
+async function main4(): Promise<void> {
+  console.log('Hello, World!');
+
+  UI.initialize();
+  model = {
+    darkMode: false,
+  };
+
+  // <div class="\${ 'checked' = isChecked } \${ 'not-checked' ! isChecked }">\${ 'checked' = isChecked } \${ 'not-checked' ! isChecked }
+
+  UI.create(document.body, `
+  <div class="\${ 'dark' = darkMode } \${ 'light' ! darkMode }">\${ 'Dark' = darkMode } \${ 'Light' ! darkMode } mode</div>
+   `, model);
+
+   setTimeout(() => model.darkMode = true, 3000);
+}
+
+
 
 
 
@@ -139,6 +157,7 @@ async function main(): Promise<void> {
 
   UI.initialize();
   model = {
+    darkMode: false,
     MyComponent,
     models: [{ item: 1 }, { item: 3 }],
     components: [MyComponent.create({ item: 1 }), MyComponent.create({ item: 3 })],
@@ -263,6 +282,9 @@ async function main(): Promise<void> {
       <div>Message: <input \${value <=> drawerMessage}> <button \${click @=> setMessage}>Show message</button></div>
       <div>Text: <textarea \${value <=> textareaMessage}>Textarea</textarea> \${textareaMessage}</div>
       <div>Checks: <label><input type="checkbox" \${checked <=> left}> Left</label> <label><input type="checkbox" \${checked <=> right}> Right</label> <b>\${left} \${right} <span \${ === left}> Left </span> <span \${ !== right}> Not right </span></b>  <span \${ !== undef}> Undefined </span>  <span \${ === undef}> Not Undefined </span></div>
+      <div><label><input type="checkbox" \${checked <=> darkMode}> Dark mode</label></div>
+      <div class="\${ 'dark-mode' = darkMode } \${ 'light-mode' ! darkMode }">\${ 'Dark' = darkMode } \${ 'Light' ! darkMode } mode</div>
+      <div class="\${| 'dark-mode' = darkMode } \${| 'light-mode' ! darkMode }">Always \${| 'Dark' = darkMode } \${| 'Light' ! darkMode } mode</div>
       <div>Demo:
         <label><input type="radio" name="demo" \${'card' ==> demo} \${change @=> changed}>Card</label>
         <label><input type="radio" name="demo" \${'ball' ==> demo} \${change @=> changed}>Ball</label>
@@ -352,6 +374,7 @@ async function main(): Promise<void> {
     ];
   }, 9500);
 
+  setTimeout(() => model.darkMode = true, 4000);
 
 
   // setInterval(() => {

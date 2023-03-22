@@ -1,5 +1,6 @@
+/* eslint-disable max-lines-per-function */
 import { UIAnimation } from './ui-animation';
-import { IUIBinding /*, IUIBindingType */, UIBinding } from "./ui-binding";
+import { IUIBinding, toUICallback, UIBinding } from "./ui-binding";
 import { UIView } from "./ui-view";
 
 export class UI {
@@ -13,9 +14,11 @@ export class UI {
 
   public static leaveAttributes = false;
 
-  private static regexReplace = /([\S\s]*?)\$\{([^}]*?[<=@!]=[*=>|][^}]*?)\}([\S\s]*)/m;
-  private static regexAttribute = /^\s*(\S*?)\s*([<=@!])=([*=>|])\s*(\S*?)\s*$/;
-  private static regexValue = /(?<before>[\S\s]*?)\$\{\s*(?<property>[\s\S]*?)\s*\}(?<after>[\S\s]*)/m;
+  private static readonly regexReplace = /([\S\s]*?)\$\{([^}]*?[<=@!]=[*=>|][^}]*?)\}([\S\s]*)/m;
+  private static readonly regexAttribute = /^\s*(\S*?)\s*([<=@!])=([*=>|])\s*(\S*?)\s*$/;
+  private static readonly regexValue = /(?<before>[\S\s]*?)\$\{\s*(?<property>[\s\S]*?)\s*\}(?<after>[\S\s]*)/m;
+  private static readonly regexConditionalValue = /^\s*(.+?)\s*([=!])\s*(\S+)/;
+  private static readonly regexSplitConditionalValue = /^(.+?)([=!])(.*)/;
 
   private static bindingCounter = 0;
 
@@ -82,10 +85,23 @@ export class UI {
           property = property.slice(1).trimStart();
         }
 
+        const propertyMatch = property.match(UI.regexConditionalValue);
+        let value;
+        let toUI: boolean | toUICallback = true;
+        if (propertyMatch) {
+          property = propertyMatch[3];
+          value = `${propertyMatch[2]}${propertyMatch[1]}`;
+          toUI = function (value, _lastValue, property, _object, fixedValue) {
+            const truthy = fixedValue[0] === '=';
+            fixedValue = fixedValue.slice(2, -1); // Remove ''
+            return !!value === truthy ? fixedValue : '';
+          };
+        }
+
         let clone = element.cloneNode() as Element;
         element.textContent = first;
         UI.parentElement(element, parent).insertBefore(clone, element.nextSibling);
-        bindings.push(UI.bind({ selector: clone, attribute: 'textContent', object, property, parent: view, oneTime }));
+        bindings.push(UI.bind({ selector: clone, attribute: 'textContent', object, property, parent: view, oneTime, value, toUI }));
         element = clone;
 
         clone = element.cloneNode() as Element;
@@ -185,11 +201,19 @@ export class UI {
             oneTime = true;
             property = property.slice(1).trimStart();
           }
+
+          const propertyMatch = property.match(UI.regexConditionalValue);
+          let value;
+          if (propertyMatch) {
+            property = propertyMatch[3];
+            value = `${propertyMatch[2]}${propertyMatch[1]}`;
+          }
+
           bindings.push(UI.bind({
             selector: element,
             attribute: attr.name,
             object, property, oneTime,
-            toUI(newValue: any, _oldValue: any, name: string, model: any): any {
+            toUI(newValue: any, _oldValue: any, name: string, model: any, fixedValue: any): any {
               if (this.oneTime) {
                 // console.log('PARTS', name, parts, this);
                 const index = parts.indexOf(name);
@@ -203,15 +227,22 @@ export class UI {
                 if (index % 2 === 0) {
                   return part;
                 }
-                return UI.resolveValue(model, part);
+                const match = part.match(UI.regexSplitConditionalValue);
+                if (match) {
+                  const value = part === `${name}${fixedValue}` ? newValue : UI.resolveValue(model, match[1]);
+                  const truthy = match[2] === '=';
+                  return !!value === truthy ? match[3].slice(1, -1) : '';
+                }
+                return part === name ? newValue : UI.resolveValue(model, part);
               }).join('');
               element.setAttribute(attr.name, value);
               return value;
             },
             parent: view,
+            value,
           }));
           parts[index++] = before;
-          parts[index++] = property;
+          parts[index++] = `${property}${value ?? ''}`;
           parts[index] = after;
           match = parts[index].match(UI.regexValue);
         }

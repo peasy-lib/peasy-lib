@@ -5,7 +5,7 @@ export type IUIBinding = Partial<Omit<UIBinding, 'id'>>;
 // export type IUIBindingType = 'conditional' | 'event' | 'fixed-value' | 'reference' | '';
 
 export type fromUICallback = (newValue: string, oldValue: any, property: string, model: any) => any | void;
-export type toUICallback = (newValue: any, oldValue: any, property: string, model: any) => string | void;
+export type toUICallback = (newValue: any, oldValue: any, property: string, model: any, value: any) => string | void;
 
 export class UIBinding {
   public id: number;
@@ -145,7 +145,7 @@ export class UIBinding {
         if (typeof this.attribute === 'boolean') { // Conditional
           value = (value ?? false) === false ? false : true;
           if (value !== this.lastValue) {
-            const uiValue = this.toUI !== true ? (this.toUI as toUICallback)(value, this.lastValue, this.property!, this.object) : value;
+            const uiValue = this.toUI !== true ? this.toUI(value, this.lastValue, this.property!, this.object, this.value) : value;
             if (uiValue !== undefined && uiValue !== this.lastUIValue) {
               // console.log('Updating toUI');
               if (uiValue === this.attribute) {
@@ -193,12 +193,12 @@ export class UIBinding {
             if (!listItemsChanged) {
               return this.updateViews();
             } else {
-              const uiValue = this.toUI !== true ? this.toUI(value, lastValue, this.property!, this.object) : value;
+              const uiValue = this.toUI !== true ? this.toUI(value, lastValue, this.property!, this.object, this.value) : value;
               return this.updateViews(uiValue);
             }
           }
 
-          const uiValue = this.toUI !== true ? this.toUI(value, lastValue, this.property!, this.object) : value;
+          const uiValue = this.toUI !== true ? this.toUI(value, lastValue, this.property!, this.object, this.value) : value;
           if (uiValue == null) {
             return this.updateViews();
           }
@@ -299,7 +299,7 @@ export class UIBinding {
       }
     } else {
       if (value !== this.lastValue) {
-        const uiValue = this.toUI !== true ? (this.toUI as toUICallback)(value, this.lastValue, this.property!, this.object) : value;
+        const uiValue = this.toUI !== true ? this.toUI(value, this.lastValue, this.property!, this.object, this.value) : value;
         if (uiValue !== undefined && uiValue !== this.lastUIValue) {
           // console.log('Updating toUI');
           const { target, property } = UI.resolveProperty(this.element, this.attribute);

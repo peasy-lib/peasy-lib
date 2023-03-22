@@ -75,6 +75,12 @@ Peasy UI uses the JavaScript/Typescript string interpolation syntax of `${ }` in
     ${prop}             Bindning from model property to attribute or text
     ${|prop}            One-time bindning from model property to attribute or text
 
+    ${'value' = prop}   Bindning that renders value if model property is truthy
+    ${'value' ! prop}   Bindning that renders value if model property is not truthy
+
+    ${|'value' = prop}  One-time bindning that renders value if model property is truthy
+    ${|'value' ! prop}  One-time bindning that renders value if model property is not truthy
+
     ${event @=> method} Event bindning from element attribute to model method
 
     ${'value' ==> prop} Binding from element to model property, used to bind
@@ -129,6 +135,12 @@ const template = `
 const model = { preferCats: true, preferDogs: false };
 ```
 
+```ts
+const template = `
+    <div class="\${ 'dark-mode' = darkMode }">\${ 'Dark' = darkMode } \${ 'Light' ! darkMode } mode</div>
+`;
+const model = { darkMode: true };
+```
 
 ```ts
 const template = `<div \${item <=* list}>Item: \${item}</div>`;
