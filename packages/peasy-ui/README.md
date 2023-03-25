@@ -201,6 +201,26 @@ const tick = () => {
 requestAnimationFrame(tick);
 ```
 
+#### Queue updates
+
+Sometimes you might need to wait with an action until Peasy UI has finished its current update. Passing a function to `UI.queue` will make it run after the current update is completed and before the next update starts.
+
+```ts
+const template = `
+    <input \${ === showInput } \${ value <=> input } \${ ==> inputElement }>
+    <button \${ click !== toggleInput }>Toggle input</button>
+`;
+const model = {
+  showInput: false,
+  toggleInput() {
+    model.showInput = !model.showInput;
+    if (model.showInput) {
+      UI.queue(() => model.inputElement.focus()); // inputElement is not available until after finished update
+    }
+  }
+};
+```
+
 ## Development and contributing
 
 If you're interested in contributing, please see the [development guidelines](DEVELOPMENT.md).

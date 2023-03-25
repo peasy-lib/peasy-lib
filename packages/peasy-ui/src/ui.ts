@@ -21,6 +21,8 @@ export class UI {
   private static readonly regexSplitConditionalValue = /^(.+?)([=!])(.*)/;
 
   private static bindingCounter = 0;
+  private static _queue: any[] = [];
+  private static _nextQueue: any[] = [];
 
   public static initialize(rafOrInterval: boolean | number = true): void {
     UI.initialized = true;
@@ -67,6 +69,10 @@ export class UI {
       return animation.play(element);
     }
     return animation.play();
+  }
+
+  public static queue(func: any): void {
+    this._nextQueue.push(func);
   }
 
   public static parse(element: Element, object: any, view: UIView, parent: any): UIBinding[] {
@@ -293,6 +299,10 @@ export class UI {
   }
 
   public static update(): void {
+    this._queue.forEach(item => item());
+    this._queue = this._nextQueue;
+    this._nextQueue = [];
+
     // console.log('UI.update', Object.keys(UI.bindings).length);
     this.views.forEach(view => view.updateFromUI());
     this.views.forEach(view => view.updateToUI());
@@ -322,7 +332,7 @@ export class UI {
           }
         }
       }
-    })
+    });
   }
 
   public static resolveProperty(object: any, property: string): { target: any; property: string } {

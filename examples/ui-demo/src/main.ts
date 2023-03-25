@@ -1,5 +1,6 @@
 import { UI } from '@peasy-lib/peasy-ui';
 import 'styles.css';
+// import 'styles5.css';
 import { MyComponent } from './my-component';
 
 // import * as Template from './demo.html';
@@ -135,16 +136,80 @@ async function main4(): Promise<void> {
     darkMode: false,
   };
 
-  // <div class="\${ 'checked' = isChecked } \${ 'not-checked' ! isChecked }">\${ 'checked' = isChecked } \${ 'not-checked' ! isChecked }
-
   UI.create(document.body, `
   <div class="\${ 'dark' = darkMode } \${ 'light' ! darkMode }">\${ 'Dark' = darkMode } \${ 'Light' ! darkMode } mode</div>
    `, model);
 
-   setTimeout(() => model.darkMode = true, 3000);
+  setTimeout(() => model.darkMode = true, 3000);
 }
 
+async function main5(): Promise<void> {
+  const template = `<div>
+      <button \${click@=>button}>Toggle data</button>
+      <div class="dataEntry" \${ entry <=* currentArray:id }>
+          <div>id: \${entry.id}</div>
+          <div>SRC: \${entry.src}</div>
+          <div>X : \${entry.x}</div>
+          <div>Y : \${entry.y}</div>
+      </div>
+      </div>`;
 
+  class App {
+    currentKey: 'A' | 'B' = "A";
+
+    myMap = {
+      A: [
+        {
+          id: 0,
+          src: "A first string",
+          x: 23,
+          y: 42,
+        },
+        {
+          id: 1,
+          src: "A 2nd string",
+          x: 32,
+          y: 24,
+        },
+      ],
+      B: [
+        {
+          id: 0,
+          src: "B string",
+          x: 3454,
+          y: 4123,
+        },
+        {
+          id: 1,
+          src: "B 2nd string",
+          x: 7890,
+          y: 6747,
+        },
+      ],
+    };
+
+    // myArray = this.myMap[this.currentKey];
+
+    get currentArray() {
+      return this.myMap[this.currentKey];
+    };
+
+    button = () => {
+      console.log("before: ", this.currentArray);
+
+      this.currentKey = this.currentKey === 'A' ? 'B' : 'A';
+      // myArray = this.myMap[this.currentKey];
+      // this.myArray = [...];
+
+      /* this.myMap[nextKey].forEach((key: any) => {
+        this.myArray.push(key);
+      }); */
+      console.log("after: ", this.currentArray);
+    };
+  }
+
+  UI.create(document.body, template, new App());
+}
 
 
 
@@ -686,6 +751,7 @@ async function selectDemo(model, demoUI) {
       break;
     case 'todo':
       template = templateTodo;
+      UI.queue(() => model.inputElement.focus());
       break;
     case 'cards':
       template = templateCards;
