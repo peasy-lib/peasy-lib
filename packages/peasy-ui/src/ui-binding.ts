@@ -330,7 +330,13 @@ export class UIBinding {
 
   public triggerAtEvent = (event: any): void => {
     // console.log('TRIGGERED', this.attribute, event, this.object);
-    this.events.push(event);
+    if (event.type === 'change') {
+      this.events.push(event);
+    } else {
+      const callback = UI.resolveValue(this.object, this.property!);
+      // TODO: Make callback send parent model for iterator/templates?
+      callback(event, this.object.$model, this.element, this.attribute, this.object);
+    }
   };
 
   private updateViews(value?: any[], uiValue?: any): void {

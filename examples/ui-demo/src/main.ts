@@ -188,23 +188,12 @@ async function main5(): Promise<void> {
       ],
     };
 
-    // myArray = this.myMap[this.currentKey];
-
     get currentArray() {
       return this.myMap[this.currentKey];
     };
 
     button = () => {
-      console.log("before: ", this.currentArray);
-
       this.currentKey = this.currentKey === 'A' ? 'B' : 'A';
-      // myArray = this.myMap[this.currentKey];
-      // this.myArray = [...];
-
-      /* this.myMap[nextKey].forEach((key: any) => {
-        this.myArray.push(key);
-      }); */
-      console.log("after: ", this.currentArray);
     };
   }
 
@@ -249,7 +238,9 @@ async function main(): Promise<void> {
     changed: async (_ev, model, element) => {
       model.transitionDuration = 0;
       model.color = 'lightgreen';
-      demoUI = await selectDemo(model, demoUI);
+      // UI.queue(async () => {
+        demoUI = await selectDemo(model, demoUI);
+      // });
     },
     card: {
       value: 'The Ace',
