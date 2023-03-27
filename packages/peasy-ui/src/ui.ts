@@ -14,9 +14,9 @@ export class UI {
 
   public static leaveAttributes = false;
 
-  private static readonly regexReplace = /([\S\s]*?)\$\{([^}]*?[<=@!]=[*=>|][^}]*?)\}([\S\s]*)/m;
+  private static readonly regexReplace = /([\S\s]*?)\\?\$\{([^}]*?[<=@!]=[*=>|][^}]*?)\}([\S\s]*)/m;
   private static readonly regexAttribute = /^\s*(\S*?)\s*([<=@!])=([*=>|])\s*(\S*?)\s*$/;
-  private static readonly regexValue = /(?<before>[\S\s]*?)\$\{\s*(?<property>[\s\S]*?)\s*\}(?<after>[\S\s]*)/m;
+  private static readonly regexValue = /(?<before>[\S\s]*?)\\?\$\{\s*(?<property>[\s\S]*?)\s*\}(?<after>[\S\s]*)/m;
   private static readonly regexConditionalValue = /^\s*(.+?)\s*([=!])\s*(\S+)/;
   private static readonly regexSplitConditionalValue = /^(.+?)([=!])(.*)/;
 
@@ -47,11 +47,13 @@ export class UI {
       //   doc = doc.parentNode;
       // }
       if (template.startsWith('#')) {
-        template = doc.querySelector(template)!.innerHTML;
+        // template = doc.querySelector(template)!.innerHTML;
+        template = (doc.querySelector(template) as HTMLTemplateElement).content.firstElementChild as HTMLElement;
+      } else {
+        const container = doc.createElement('div');
+        container.innerHTML = options.prepare ? UI.prepare(template) : template;
+        template = container.firstElementChild as HTMLElement;
       }
-      const container = doc.createElement('div');
-      container.innerHTML = options.prepare ? UI.prepare(template) : template;
-      template = container.firstElementChild as HTMLElement;
     }
     const view = UIView.create(parent, template, model, options);
     if (view.parent === UI) {
@@ -116,8 +118,19 @@ export class UI {
         element = clone;
         match = text.match(UI.regexValue);
       }
-    }
-    else {
+    } else {
+      const puiAttribute = element.getAttribute('pui') ?? '';
+      if (puiAttribute.trim().length > 0) {
+        const puiBindings = puiAttribute.split(';');
+        for (let puiBinding of puiBindings) {
+          puiBinding = puiBinding.trim();
+          if (puiBinding.length > 0) {
+            element.setAttribute(`pui.${UI.bindingCounter++}`, puiBinding);
+          }
+        }
+      }
+      element.removeAttribute('pui');
+
       bindings.push(...Object.keys(element.attributes ?? []).reverse().map((attribute): UIBinding[] => {
         const bindings: UIBinding[] = [];
         if (element instanceof Comment) {
@@ -125,6 +138,7 @@ export class UI {
         }
         const attr = element.attributes[attribute as any];
         if (attr.name.startsWith('pui.')) {
+          // return UI.parseAttribute(element, object, view, parent, attr.name, attr.value);
           const match = attr.value.match(UI.regexAttribute);
           let [_ignore, name, toUI, fromUI, value] = match!;
           let fixedValue: string | undefined;
@@ -401,5 +415,79 @@ export class UI {
     template += remaining;
 
     return template;
+  }
+
+  private static parseAttribute(element: Element, object: any, view: UIView, parent: any, attrName: string, attrValue: string): UIBinding[] {
+    const match = attrValue.match(UI.regexAttribute);
+    let [_ignore, name, toUI, fromUI, value] = match!;
+    let fixedValue: string | undefined;
+    let template;
+    let oneTime = false;
+    // let type: IUIBindingType = '';
+    if (toUI !== '@') {
+      const fixed = name.match(/^'(.*?)'$/);
+      if (fixed != null) { // 'value' ==> fixed value
+        // type = 'fixed-value';
+        fixedValue = fixed[1];
+        element.setAttribute('value', fixedValue);
+        name = element.nodeName.toLowerCase() === 'option' ? 'selected' : 'checked';
+        fromUI = ((value: string) => value ? fixedValue : undefined) as unknown as string;
+        toUI = ((value: string) => value === fixedValue) as unknown as string;
+      } else if (name === '') {
+        if (fromUI === '>') { // ==> reference
+          // type = 'reference';
+          const { target, property } = UI.resolveProperty(object, value);
+          target[property] = element;
+          return [];
+        } else { // === or !== conditional
+          // type = 'conditional';
+          const comment = document.createComment(attrName);
+          UI.parentNode(element, parent).insertBefore(comment, element);
+          UI.parentNode(element, parent).removeChild(element);
+          element.removeAttribute(attrName);
+          template = element;
+          element = comment as unknown as Element;
+          name = (toUI === '=') as unknown as string;
+          toUI = true as unknown as string;
+          if (fromUI === '|') { // ==| or !=| conditional one time
+            oneTime = true;
+          }
+        }
+      } else if (fromUI === '=' && toUI === '=') { // component === (state)
+        const parentNode = UI.parentNode(element, parent);
+        if (parentNode.nodeType !== 8) {
+          const comment = document.createComment(attrName);
+          parentNode.insertBefore(comment, element);
+          parentNode.removeChild(element);
+          element.removeAttribute(attrName);
+          element = comment as unknown as Element;
+        } else {
+          element = parentNode as unknown as Element;
+        }
+        template = name;
+        oneTime = true;
+        toUI = true as unknown as string;
+      } else if (fromUI === '*') { // *=> event
+        // type = 'event';
+        const comment = document.createComment(attrName);
+        UI.parentNode(element, parent).insertBefore(comment, element);
+        UI.parentNode(element, parent).removeChild(element);
+        element.removeAttribute(attrName);
+        template = element;
+        element = comment as unknown as Element;
+      } else if (fromUI === '|') { // attr ==| prop one time
+        oneTime = true;
+      } else if (name !== 'checked') {
+        element.setAttribute(name, '');
+      }
+    }
+    return [UI.bind({
+      selector: element, attribute: name, value: fixedValue, object, property: value, template: template as HTMLElement, // type,
+      toUI: typeof toUI === 'string' ? toUI === '<' : toUI,
+      fromUI: typeof fromUI === 'string' ? fromUI === '>' : fromUI,
+      atEvent: toUI === '@',
+      parent: view,
+      oneTime,
+    })];
   }
 }

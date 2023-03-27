@@ -1,6 +1,6 @@
 {
   "name": "@peasy-lib/peasy-ui",
-  "version": "0.9.27",
+  "version": "0.9.28",
   "main": "dist/index.js",
   "module": "dist/esm/index.mjs",
   "exports": {
