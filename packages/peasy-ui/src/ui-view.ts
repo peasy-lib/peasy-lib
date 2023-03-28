@@ -4,10 +4,11 @@ import { UIBinding } from "./ui-binding";
 
 export class UIView {
   public state: 'created' | 'bound' | 'attaching' | 'attached' | 'rendered' | 'destroyed' = 'created';
-  public parent!: typeof UI | UIBinding;
+  public parent!: typeof UI | UIBinding | UIView;
   public model: any;
   public element!: HTMLElement;
   public bindings: UIBinding[] = [];
+  public views: UIView[] = [];
   public animations: UIAnimation[] = [];
   public animationQueue: UIAnimation[] = [];
   public destroyed: '' | 'queue' | 'destroy' | 'destroyed' = '';
@@ -23,12 +24,23 @@ export class UIView {
 
     view.model = model;
     view.element = template;
-    view.bindings.push(...UI.parse(view.element, model, view, options.parent));
+    view.parent = (options.parent ?? UI);
+    if (template instanceof HTMLTemplateElement) {
+      const content = template.content.cloneNode(true) as HTMLElement;
+      if (content.children.length === 1) {
+        // console.log('TEMPLATE, single child');
+        return UI.create(parent, content.firstElementChild as HTMLElement, model, options);
+      }
+      // console.log('TEMPLATE, many children');
+      view.views = [...content.children].map(child => UI.create(parent, child as HTMLElement, model, { ...options, ...{ parent: view } }));
+      view.state = 'rendered';
+    } else {
+      view.bindings.push(...UI.parse(view.element, model, view, options.parent));
+    }
     view.parentElement = parent;
     view.sibling = options.sibling;
 
-    view.parent = (options.parent ?? UI);
-
+    // console.log('Not TEMPLATE');
     view.attached = new Promise<UIView>((resolve) => {
       view.attachResolve = resolve;
     });
@@ -37,6 +49,7 @@ export class UIView {
   }
 
   public destroy(): void {
+    this.views.forEach(view => view.destroy());
     // console.log('[view] destroy', this.element, this.model, this.element.getAnimations({ subtree: true }));
     this.element.classList.add('pui-removing');
     this.destroyed = 'queue';
@@ -45,7 +58,7 @@ export class UIView {
 
   public terminate(): void {
     // console.log('[view] terminate', this.element, this.model, this.element.getAnimations({ subtree: true }));
-    Promise.all(
+    void Promise.all(
       this.getAnimations()
       // this.element.getAnimations({ subtree: true })
       //   .map(animation => animation.finished)
@@ -82,9 +95,11 @@ export class UIView {
   }
 
   public updateFromUI(): void {
+    this.views.forEach(view => view.updateFromUI());
     this.bindings.forEach(binding => binding.updateFromUI());
   }
   public updateToUI(): void {
+    this.views.forEach(view => view.updateToUI());
     this.bindings.forEach(binding => binding.updateToUI());
 
     // if (this.element.classList.contains('impact')) {
@@ -116,6 +131,7 @@ export class UIView {
     }
   }
   public updateAtEvents(): void {
+    this.views.forEach(view => view.updateAtEvents());
     this.bindings.forEach(binding => binding.updateAtEvents());
   }
 
@@ -136,7 +152,7 @@ export class UIView {
       animation.startTime = now;
       animation.animation = animation.element!.animate(animation.keyframes, animation.options!);
       animation.finished = animation.animation.finished;
-      animation.finished.then(() => {
+      void animation.finished.then(() => {
         (animation as UIAnimation).state = 'finished';
         this.updateAnimations(performance.now());
       });

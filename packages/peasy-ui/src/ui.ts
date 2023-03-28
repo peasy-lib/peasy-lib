@@ -33,7 +33,7 @@ export class UI {
       const tick = () => {
         UI.update();
         requestAnimationFrame(tick);
-      }
+      };
       requestAnimationFrame(tick);
       return;
     }
@@ -48,16 +48,18 @@ export class UI {
       // }
       if (template.startsWith('#')) {
         // template = doc.querySelector(template)!.innerHTML;
-        template = (doc.querySelector(template) as HTMLTemplateElement).content.firstElementChild as HTMLElement;
+        template = ((doc.querySelector(template) as HTMLTemplateElement));// .content.cloneNode(true) as HTMLElement).firstElementChild as HTMLElement;
       } else {
-        const container = doc.createElement('div');
+        const container = doc.createElement('template');
         container.innerHTML = options.prepare ? UI.prepare(template) : template;
-        template = container.firstElementChild as HTMLElement;
+        template = container; // .firstElementChild as HTMLElement;
       }
     }
+
     const view = UIView.create(parent, template, model, options);
     if (view.parent === UI) {
       UI.views.push(view);
+      // console.log('VIEWS', UI.views);
     }
     if (!UI.initialized) {
       UI.initialize();
