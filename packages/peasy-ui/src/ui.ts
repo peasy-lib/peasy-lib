@@ -25,9 +25,15 @@ class _UI {
   private static bindingCounter = 0;
   private static _queue: any[] = [];
   private static _nextQueue: any[] = [];
+  private static loadPromise: Promise<void>;
+  private static loadResolve: () => void;
 
   public static initialize(rafOrInterval: boolean | number = true): void {
     this.initialized = true;
+
+    this.loadPromise = new Promise(res => this.loadResolve = res);
+    document.defaultView?.addEventListener('load', this.loaded);
+
     if (rafOrInterval === false) {
       return;
     }
@@ -40,6 +46,24 @@ class _UI {
       return;
     }
     setInterval(() => this.update(), 1000 / rafOrInterval);
+  }
+
+  public static ready(): void | Promise<void> {
+    const components = [...document.querySelectorAll('object[type="text/pui"]')] as HTMLObjectElement[];
+    if (components.length === 0) {
+      return;
+    }
+    const style = document.createElement('style');
+    style.innerHTML = 'object[type="text/pui"] { height: 0; position: absolute; }';
+    document.head.appendChild(style);
+
+    return this.loadPromise.then(() => {
+      components.forEach(component => {
+        [...(component.contentDocument?.querySelectorAll('style') ?? [])].forEach(style => {
+          document.head.appendChild(style.cloneNode(true));
+        });
+      });
+    });
   }
 
   public static create(parent: HTMLElement, template: string | HTMLElement, model = {}, options: { parent: any; prepare: boolean; sibling: any } = { parent: null, prepare: true, sibling: null }): UIView {
@@ -183,16 +207,32 @@ class _UI {
                 }
               }
             } else if (fromUI === '=' && toUI === '=') { // component === (state)
-              element.setAttribute('pui-unrendered', '');
-              const parentNode = this.parentNode(element, parent);
-              if (parentNode.nodeType !== 8) {
-                const comment = document.createComment(attr.name);
-                parentNode.insertBefore(comment, element);
-                parentNode.removeChild(element);
-                element.removeAttribute(attr.name);
-                element = comment as unknown as Element;
-              } else {
-                element = parentNode as unknown as Element;
+              // element.setAttribute('pui-unrendered', '');
+              // const parentNode = this.parentNode(element, parent);
+              // if (parentNode.nodeType !== 8) {
+              //   const comment = document.createComment(attr.name);
+              //   parentNode.insertBefore(comment, element);
+              //   parentNode.removeChild(element);
+              //   element.removeAttribute(attr.name);
+              //   element = comment as unknown as Element;
+              // } else {
+              //   element = parentNode as unknown as Element;
+              // }
+              // template = name;
+              // oneTime = true;
+              // toUI = true as unknown as string;
+              if (!element.tagName.includes('-')) {
+                element.setAttribute('pui-unrendered', '');
+                const parentNode = this.parentNode(element, parent);
+                if (parentNode.nodeType !== 8) {
+                  const comment = document.createComment(attr.name);
+                  parentNode.insertBefore(comment, element);
+                  parentNode.removeChild(element);
+                  element.removeAttribute(attr.name);
+                  element = comment as unknown as Element;
+                } else {
+                  element = parentNode as unknown as Element;
+                }
               }
               template = name;
               oneTime = true;
@@ -408,6 +448,11 @@ class _UI {
     }
     return parent?.element!;
   }
+
+  private static readonly loaded = (): void => {
+    this.loadResolve();
+    document.defaultView?.removeEventListener('load', this.loaded);
+  };
 
   private static prepare(template: string): string {
     // const original = template;

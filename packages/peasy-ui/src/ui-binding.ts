@@ -291,10 +291,13 @@ export class UIBinding {
       } else { // Component
         if (this.value == null) {
           const component = UI.resolveValue(this.object, this.attribute);
+          // console.log('Component', this.attribute, this.object, component);
           const template = component.template;
           const model = value == null ? component : component.create(value);
           this.value = value ?? component;
-          this.views.push(UI.create(this.element.parentElement!, template, model, { parent: this, prepare: true, sibling: this.element }));
+          const parentElement = this.element.nodeType === 8 ? this.element.parentElement! : this.element;
+          const sibling = this.element.nodeType === 8 ? this.element : null;
+          this.views.push(UI.create(parentElement, template, model, { parent: this, prepare: true, sibling }));
         }
       }
     } else {
