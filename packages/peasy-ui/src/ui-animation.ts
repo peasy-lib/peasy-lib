@@ -38,12 +38,12 @@ export class UIAnimation {
     animation.view = options.view ?? UI.globals ?? animation.view;
 
     if (animation.chain == null) {
-      const q = animation.view.animationQueue;
+      const q = animation.view!.animationQueue;
       animation.chain = q[q.length - 1];
     }
 
     if (animation.name != null) {
-      animation.view.animations.push(animation);
+      animation.view!.animations.push(animation);
     }
 
     if (options.element != null) {

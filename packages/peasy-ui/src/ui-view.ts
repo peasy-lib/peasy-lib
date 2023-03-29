@@ -67,7 +67,7 @@ export class UIView {
       this.element.parentElement?.removeChild(this.element);
       this.bindings.forEach(binding => binding.unbind());
 
-      const index = this.parent.views.findIndex(view => view === this);
+      const index = this.parent.views.findIndex((view: UIView) => view === this);
       if (index > -1) {
         this.parent.views.splice(index, 1);
       }
