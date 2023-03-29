@@ -25,8 +25,8 @@ export class UIView {
     view.model = model;
     view.element = template;
     view.parent = (options.parent ?? UI);
-    if (template instanceof HTMLTemplateElement) {
-      const content = template.content.cloneNode(true) as HTMLElement;
+    if (template instanceof HTMLTemplateElement || template.tagName === 'TEMPLATE') {
+      const content = (template as HTMLTemplateElement).content.cloneNode(true) as HTMLElement;
       if (content.children.length === 1) {
         // console.log('TEMPLATE, single child');
         return UI.create(parent, content.firstElementChild as HTMLElement, model, options);
