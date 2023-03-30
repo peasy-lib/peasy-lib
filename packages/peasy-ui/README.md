@@ -102,27 +102,27 @@ Attribute bindings use either `\${ }` or the `pui` attribute within an element t
 
 Available attribute bindings are
 
-    attr <== prop     Bindning from model property to element attribute
-    attr <=| prop     One-time bindning from model property to element attribute
-    attr ==> prop     Bindning from element attribute to model property
-    attr <=> prop     Two-way binding between element attribute and model property
+    attr <== prop     From model property to element attribute
+    attr <=| prop     One-time from model property to element attribute
+    attr ==> prop     From element attribute to model property
+    attr <=> prop     Two-way between element attribute and model property
 
-    event @=> method  Event bindning from element attribute to model method
+    event @=> method  Event from element attribute to model method
 
-    'value' ==> prop  Binding from element to model property, used to bind
-                      values of radio buttons and select inputs to a model property
+    'value' ==> prop  From element to model property, used to bind values of
+                      radio buttons and select inputs to a model property
 
-    ==> prop    One-time binding that stores the element in model property
+    ==> prop    One-time that stores the element in model property
 
-    === prop    Binding that renders the element if model property is not false and not nullish
-    !== prop    Binding that renders the element if model property is false or nullish
+    === prop    Renders the element if model property is not false and not nullish
+    !== prop    Renders the element if model property is false or nullish
 
-    alias <=* list(:key)  Bindning from model list property to view template
-                          alias for each item in the list. If key is provided
+    alias <=* list(:key)  From model list property to view template alias
+                          for each item in the list. If key is provided
                           property key will be used to decide item equality
 
-    comp === (state)  Binding that renders component (property with type or instance)
-                      with a template and passes state, if component type, to
+    comp === (state)  Renders component (property with type or instance) with
+                      a template and passes state, if component type, to
                       component's create method
 
 #### Examples
