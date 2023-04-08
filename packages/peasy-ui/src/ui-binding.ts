@@ -348,10 +348,13 @@ export class UIBinding {
     } else {
       this.views.forEach((view, index) => {
         const item = uiValue[index];
-        if (typeof item !== 'string') {
-          item.$index = index;
-        }
+        // TODO: Maybe restore this?
+        // const type = typeof item;
+        // if (type !== 'string' && type !== 'number') {
+        //   item.$index = index;
+        // }
         view.model.$model[this.attribute] = item;
+        view.model.$index = index;
         view.updateToUI();
       });
       this.lastValue = [...value];

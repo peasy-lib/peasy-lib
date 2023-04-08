@@ -405,7 +405,13 @@ class _UI {
       object = object.$parent;
       properties.shift();
     }
-    let target = '$model' in object ? object.$model : object;
+    let target = object;
+    if (properties[0] === '$index' && Object.hasOwn(target, '$index')) {
+      return { target, property: properties[0] };
+    }
+    if (Object.hasOwn(target, '$model')) {
+      target = object.$model;
+    }
     while (properties.length > 1) {
       target = target[properties.shift()!];
     }
@@ -416,7 +422,7 @@ class _UI {
     let guard = 0;
     do {
       const { target, property } = this.resolveProperty(object, prop);
-      if (target != null && property in target) {
+      if (target != null && Object.hasOwn(target, property)) {
         return target[property];
       }
       object = object.$parent;
