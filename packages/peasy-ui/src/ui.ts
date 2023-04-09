@@ -235,7 +235,7 @@ class _UI {
                 }
               }
               template = name;
-              oneTime = true;
+              // oneTime = true;
               toUI = true as unknown as string;
             } else if (fromUI === '*') { // *=> event
               // type = 'event';
@@ -367,8 +367,8 @@ class _UI {
     this._nextQueue = [];
 
     // console.log('this.update', Object.keys(this.bindings).length);
-    this.views.forEach(view => view.updateFromUI());
     this.views.forEach(view => view.updateToUI());
+    this.views.forEach(view => view.updateFromUI());
     this.views.forEach(view => view.updateAtEvents());
 
     const now = performance.now();
@@ -406,10 +406,10 @@ class _UI {
       properties.shift();
     }
     let target = object;
-    if (properties[0] === '$index' && Object.hasOwn(target, '$index')) {
+    if (properties[0] === '$index' && this.objectHas(target, '$index')) {
       return { target, property: properties[0] };
     }
-    if (Object.hasOwn(target, '$model')) {
+    if (this.objectHas(target, '$model')) {
       target = object.$model;
     }
     while (properties.length > 1) {
@@ -422,7 +422,7 @@ class _UI {
     let guard = 0;
     do {
       const { target, property } = this.resolveProperty(object, prop);
-      if (target != null && Object.hasOwn(target, property)) {
+      if (target != null && this.objectHas(target, property)) {
         return target[property];
       }
       object = object.$parent;
@@ -431,6 +431,16 @@ class _UI {
     if (prop in this.registrations) {
       return this.registrations[prop];
     }
+  }
+
+  private static objectHas(target: any, property: string): boolean {
+    try {
+      return property in target;
+    } catch (e) {
+      return false;
+    }
+    // const type = typeof target;
+    // return (type === 'object' || type === 'function') && property in target;
   }
 
   public static parentElement(element: Element, parent: UIView | UIBinding | null): HTMLElement {

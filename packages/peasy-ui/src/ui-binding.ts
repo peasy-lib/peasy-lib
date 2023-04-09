@@ -289,15 +289,22 @@ export class UIBinding {
           return this.updateViews(value, uiValue);
         }
       } else { // Component
-        if (this.value == null) {
-          const component = UI.resolveValue(this.object, this.attribute);
+        const component = UI.resolveValue(this.object, this.attribute);
+        if ((value ?? component) == null || (value ?? component) !== this.lastValue) {
+          // console.log('NEW COMPONENT VALUE', value, UI.resolveValue(this.object, this.attribute), this.lastValue);
+          if (this.lastUIValue != null) {
+            this.lastUIValue.destroy();
+            this.lastUIValue = null;
+          }
           // console.log('Component', this.attribute, this.object, component);
           const template = component.template;
           const model = value == null ? component : component.create(value);
-          this.value = value ?? component;
+          // this.value = value ?? component;
+          this.lastValue = value ?? component;
           const parentElement = this.element.nodeType === 8 ? this.element.parentElement! : this.element;
           const sibling = this.element.nodeType === 8 ? this.element : null;
-          this.views.push(UI.create(parentElement, template, model, { parent: this, prepare: true, sibling }));
+          this.lastUIValue = UI.create(parentElement, template, model, { parent: this, prepare: true, sibling });
+          this.views.push(this.lastUIValue);
         }
       }
     } else {
