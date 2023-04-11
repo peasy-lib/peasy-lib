@@ -68,7 +68,7 @@ class _UI {
 
   public static create(parent: HTMLElement, template: string | HTMLElement, model = {}, options: { parent: any; prepare: boolean; sibling: any } = { parent: null, prepare: true, sibling: null }): UIView {
     if (typeof template === 'string') {
-      const doc = parent?.ownerDocument ?? document; // as any;
+      const doc = parent?.ownerDocument?.defaultView != null ? parent.ownerDocument : document; // as any;
       // while (doc.parentNode != null) {
       //   doc = doc.parentNode;
       // }
