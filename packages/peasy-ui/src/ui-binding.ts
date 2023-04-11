@@ -297,8 +297,8 @@ export class UIBinding {
             this.lastUIValue = null;
           }
           // console.log('Component', this.attribute, this.object, component);
-          const template = component.template;
           const model = value == null ? component : component.create(value);
+          const template = component.template;
           // this.value = value ?? component;
           this.lastValue = value ?? component;
           const parentElement = this.element.nodeType === 8 ? this.element.parentElement! : this.element;
