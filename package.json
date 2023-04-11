@@ -1,7 +1,7 @@
 {
   "name": "@peasy-lib/monorepo",
   "private": true,
-  "version": "0.9.24",
+  "version": "0.9.34",
   "workspaces": [
     "packages/peasy-ui",
     "packages/peasy-lighting",
@@ -15,7 +15,8 @@
     "examples/physics-demo",
     "examples/assets-demo",
 
-    "examples/platformer-tutorial-1"
+    "examples/platformer-tutorial-1",
+    "examples/todo-mvc"
   ],
   "license": "UNLICENSED",
   "engines": {

@@ -200,6 +200,42 @@ async function main5(): Promise<void> {
   UI.create(document.body, template, new App());
 }
 
+async function main6(): Promise<void> {
+  const template = `
+        <dynamic-component pui="component ==="></dynamic-component>
+        <dynamic-component pui="Component === who"></dynamic-component>
+    `;
+
+  class Component {
+    static template = '<div>Hello, ${name}!</div>';
+    template = '<div>My name is ${name}</div>';
+
+    public constructor(private name: string) { }
+
+    static create(input): Component {
+      return new Component(input.name);
+    }
+  }
+
+  class App {
+    // component = new Component('instance');
+    one = new Component('one');
+    two = new Component('two');
+    world = { name: 'World' };
+    everyone = { name: 'Everyone' };
+    Component = Component;
+
+    get component() {
+      return new Date().getSeconds() % 2 === 0 ? this.one : this.two;
+    };
+    get who() {
+      return new Date().getSeconds() % 2 === 0 ? this.world : this.everyone;
+    }
+  }
+
+  UI.create(document.body, template, new App());
+}
+
 
 
 const balls = 200;
@@ -234,12 +270,12 @@ async function main(): Promise<void> {
       model.transitionDuration += 2000;
       model.color = 'gold';
     },
-    get hasNoColor() { return (this.color.length ?? '') === 0; },
+    get hasNoColor() { return (model.color.length ?? '') === 0; },
     changed: async (_ev, model, element) => {
       model.transitionDuration = 0;
       model.color = 'lightgreen';
       // UI.queue(async () => {
-        demoUI = await selectDemo(model, demoUI);
+      demoUI = await selectDemo(model, demoUI);
       // });
     },
     card: {
@@ -631,9 +667,11 @@ class Card {
   }
 
   public get x(): number {
+    // return (this.deck.indexOf(this) % 13) * 90;
     return ((this as any).$index % 13) * 90;
   }
   public get y(): number {
+    // return Math.floor(this.deck.indexOf(this) / 13) * 125;
     return Math.floor((this as any).$index / 13) * 125;
   }
 }

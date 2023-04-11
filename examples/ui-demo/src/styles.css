@@ -369,3 +369,10 @@ input {
 .second {
   background-color: red;
 }
+
+dynamic-component {
+  display: grid;
+}
+dynamic-component > * {
+  grid-area: 1 / 1;
+}
