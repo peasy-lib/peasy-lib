@@ -48,22 +48,32 @@ class _UI {
     setInterval(() => this.update(), 1000 / rafOrInterval);
   }
 
-  public static ready(): void | Promise<void> {
-    const components = [...document.querySelectorAll('object[type="text/pui"]')] as HTMLObjectElement[];
-    if (components.length === 0) {
-      return;
-    }
-    const style = document.createElement('style');
-    style.innerHTML = 'object[type="text/pui"] { height: 0; position: absolute; }';
-    document.head.appendChild(style);
+  public static import(src: string) {
+    document.body.insertAdjacentHTML(`afterbegin`, `<object type="text/pui" data="${src}"></object>`);
+  }
 
+  public static ready(): void | Promise<void> {
     return this.loadPromise.then(() => {
-      components.forEach(component => {
-        [...(component.contentDocument?.querySelectorAll('style') ?? [])].forEach(style => {
-          document.head.appendChild(style.cloneNode(true));
-        });
-      });
+      if (this.hoist()) {
+        document.head.insertAdjacentHTML('beforeend',
+          '<style> object[type="text/pui"] { height: 0; position: absolute; } </style>');
+      }
     });
+    // const components = [...document.querySelectorAll('object[type="text/pui"]')] as HTMLObjectElement[];
+    // if (components.length === 0) {
+    //   return;
+    // }
+    // const style = document.createElement('style');
+    // style.innerHTML = 'object[type="text/pui"] { height: 0; position: absolute; }';
+    // document.head.appendChild(style);
+
+    // return this.loadPromise.then(() => {
+    //   components.forEach(component => {
+    //     [...(component.contentDocument?.querySelectorAll('style') ?? [])].forEach(style => {
+    //       document.head.appendChild(style.cloneNode(true));
+    //     });
+    //   });
+    // });
   }
 
   public static create(parent: HTMLElement, template: string | HTMLElement, model = {}, options: { parent: any; prepare: boolean; sibling: any } = { parent: null, prepare: true, sibling: null }): UIView {
@@ -431,6 +441,23 @@ class _UI {
     if (prop in this.registrations) {
       return this.registrations[prop];
     }
+  }
+
+  private static hoist(to = document, doc = document): boolean {
+    if (to !== doc) {
+      (doc.querySelectorAll('style') ?? []).forEach(style => {
+        to.head.appendChild(style.cloneNode(true));
+      });
+      (doc.querySelectorAll('template') ?? []).forEach(template => {
+        to.head.appendChild(template.cloneNode(true));
+      });
+    }
+    const components = doc.querySelectorAll('object[type="text/pui"]') ?? [];
+    let hoisted = components.length > 0;
+    components.forEach(component => {
+      hoisted = this.hoist(to, (component as HTMLObjectElement).contentDocument!) || hoisted;
+    });
+    return hoisted;
   }
 
   private static objectHas(target: any, property: string): boolean {
