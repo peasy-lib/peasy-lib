@@ -4,11 +4,13 @@ This is the repository for Peasy UI, a small-ish and relatively easy to use UI b
 
 ## Introduction
 
-Peasy UI provides uncomplicated UI bindings for HTML via templating. It's intended to be used in vanilla JavaScript/Typescript projects where using `createElement` is too cumbersome and adding a complete SPA framework is overkill or simply not desired. Thanks to the small scope of the library, performance is decent. **Peasy UI does not require an installation and can be used in vanilla HTML+JavaScript without a build step.**
+Peasy UI provides uncomplicated UI bindings for HTML via templating. It encourages a modular approach and supports both HTML and JavaScript single file components. Peasy UI is intended to be used in vanilla JavaScript/Typescript projects where using `createElement` is too cumbersome and adding a complete SPA framework is overkill or simply not desired. Thanks to the small scope of the library, performance is decent.
+
+**Peasy UI does not require an installation and can be used in vanilla HTML+JavaScript without a build step.**
 
 ## First look
 
-In Peasy UI, an HTML template is combined with a JavaScript/Typescript object, the model, into a `UI View` that's added to an element. Peasy UI will then sync state between the UI and the model according to the one-way, two-way and event bindings. For a more exact control over when the state is synced, the `update()` method can be called manually, typically after updating the model or in a recurring (game) loop, .
+In Peasy UI, an HTML template is combined with a JavaScript/Typescript object, the model, into a `UI View` that's added to an element. Peasy UI will then sync state between the UI and the model according to the one-way, two-way and event bindings. For a more exact control over when the state is synced, the `update()` method can be called manually, typically after updating the model or in a recurring (game) loop.
 
 ```ts
 const template = `
@@ -38,7 +40,7 @@ and `import` it into whichever files you want to use it
 import { UI } from '@peasy-lib/peasy-ui';
 ```
 
-If you don't have a build process or don't want to install it, use a `script` tag of type `module` and import from `https://cdn.skypack.dev/@peasy-lib/peasy-ui` instead.
+If you don't have a build process or don't want to install it, use a `script` tag of type `module` and import from `https://cdn.skypack.dev/@peasy-lib/peasy-ui`.
 
 ```html
 <html>
@@ -125,7 +127,7 @@ Available attribute bindings are
                       a template and passes state, if component type, to
                       component's create method
 
-#### Examples
+### Examples
 
 A combination of the text value binding and a binding for the `change` event can be used to capture and react to changes in radio buttons and selects.
 
@@ -301,7 +303,7 @@ Using a JavaScript single file component is done by importing it in script and t
 
 #### HTML single file component
 
-HTML single file components rely on the `UI.register` and a `text/pui` MIME type to be identified.
+HTML single file components rely on the `UI.register` and `UI.import` methods.
 
 ```html
 <!-- list-item.html -->
@@ -333,7 +335,7 @@ HTML single file components rely on the `UI.register` and a `text/pui` MIME type
 </script>
 ```
 
-Since _HTML imports_ aren't here (yet), Peasy UI uses the `object` element and an additional method, `UI.ready`, to support HTML single file components.
+Since _HTML imports_ aren't here (yet), Peasy UI uses the `UI.import` and `UI.ready` methods to support HTML single file components.
 
 ```html
 <!-- index.html -->
@@ -346,8 +348,6 @@ Since _HTML imports_ aren't here (yet), Peasy UI uses the `object` element and a
 </head>
 
 <body>
-  <object type="text/pui" data="./list-item.html"></object> <!-- Note the text/pui MIME type -->
-
   <template id="sfc-app">
     <div>
       <div pui="name <=* names"><list-item pui="ListItem === name"></list-item></div>
@@ -356,6 +356,8 @@ Since _HTML imports_ aren't here (yet), Peasy UI uses the `object` element and a
 
   <script type="module">
     import { UI } from "https://cdn.skypack.dev/@peasy-lib/peasy-ui";
+
+    UI.import('./list-item.html');
 
     class SFCApp {
       names = [{ name: 'World' }, { name: 'everyone' }];
