@@ -52,12 +52,13 @@ class _UI {
     document.body.insertAdjacentHTML(`afterbegin`, `<object type="text/pui" data="${src}"></object>`);
   }
 
-  public static ready(): void | Promise<void> {
+  public static ready(): Promise<Record<string, any>> {
     return this.loadPromise.then(() => {
       if (this.hoist()) {
         document.head.insertAdjacentHTML('beforeend',
           '<style> object[type="text/pui"] { height: 0; position: absolute; } </style>');
       }
+      return this.registrations;
     });
     // const components = [...document.querySelectorAll('object[type="text/pui"]')] as HTMLObjectElement[];
     // if (components.length === 0) {

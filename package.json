@@ -1,7 +1,7 @@
 {
   "name": "@peasy-lib/monorepo",
   "private": true,
-  "version": "0.9.37",
+  "version": "0.9.38",
   "workspaces": [
     "packages/peasy-ui",
     "packages/peasy-lighting",
