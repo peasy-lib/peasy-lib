@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Peasy Engine</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="/">
+</head>
+
+<body>
+  <h2>Easy peasy engine</h2>
+
+  <template id="app">
+    <div>Render engine: delta: ${deltaTime}, total: ${totalTime}</div>
+    <div>
+      <button pui="click @=> start">Start</button>
+      <button pui="click @=> stop">Stop</button>
+      <button pui="click @=> pause">Pause</button>
+    </div>
+    <br>
+    <div>Physics engine: delta: ${deltaTimePhysics}, total: ${totalTimePhysics}</div>
+    <div>
+      <button pui="click @=> startPhysics">Start</button>
+      <button pui="click @=> stopPhysics">Stop</button>
+      <button pui="click @=> pausePhysics">Pause</button>
+    </div>
+  </template>
+</body>
+
+</html>

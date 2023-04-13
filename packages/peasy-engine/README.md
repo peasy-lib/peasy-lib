@@ -1,0 +1,68 @@
+# Peasy Engine
+
+This is the repository for Peasy Engine, a small-ish and relatively easy to use engine library.
+
+## Introduction
+
+Peasy Engine provides the possibility to create (fixed step) engines that will invoke a callback at a desired interval.
+
+## First look
+
+```ts
+import { Engine } from '@peasy-lib/peasy-engine';
+
+Engine.create((deltaTime: number) => {
+  // Called 60 times per second with deltaTime = 16.667
+});
+```
+<!-- TODO: Finish examples above -->
+
+## Getting started
+
+If you've got a build process and are using npm, install Peasy Engine with
+
+    npm i @peasy-lib/peasy-engine
+
+and `import` it into whichever files you want to use it
+
+```ts
+import { Engine } from '@peasy-lib/peasy-engine';
+```
+
+If you don't have a build process or don't want to install it, use a `script` tag
+
+```html
+<script src="https://unpkg.com/@peasy-lib/peasy-engine">
+```
+to make `Engine` available.
+
+## Features and syntax
+
+Peasy Engine enables creating one or more (fixed step) engines and specify individual callbacks and callback intervals for each one. In addition, an engine can be manually started, stopped and paused.
+
+```ts
+function update(deltaTime: number) {
+  // Update physics based on delta time
+}
+
+function render() {
+  if (Input.is('menu')) {
+    physicsEngine.pause();
+  } else if (Input.is('close-menu')) {
+    physicsEngine.start();
+  }
+
+  // Draw/create ui
+}
+
+const renderEngine = Engine.create(render);
+const physicsEngine = Engine.create({ fps: 240, callback: update, started: false });
+
+// Create world
+
+physicsEngine.start();
+```
+
+## Development and contributing
+
+If you're interested in contributing, please see the [development guidelines](DEVELOPMENT.md).

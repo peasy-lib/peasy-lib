@@ -15,6 +15,7 @@ The following packages are part of Peasy Lib:
 * [peasy-input](packages/peasy-input/README.md) - An easy to use input library.
 * [peasy-physics](packages/peasy-physics/README.md) - An easy to use physics library.
 * [peasy-assets](packages/peasy-assets/README.md) - An easy to use assets library.
+* [peasy-engine](packages/peasy-engine/README.md) - An easy to use engine library.
 
 ## Acknowledgements
 
