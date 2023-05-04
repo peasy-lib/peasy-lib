@@ -1,6 +1,6 @@
 {
   "name": "@peasy-lib/peasy-engine",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "dist/index.js",
   "module": "dist/esm/index.mjs",
   "exports": {
@@ -11,13 +11,13 @@
   "license": "UNLICENSED",
   "description": "An easy peasy engine library.",
   "author": "Jürgen Wenzel",
-  "homepage": "https://github.com/peasy-lib/peasy-engine#readme",
+  "homepage": "https://github.com/peasy-lib/peasy-lib/tree/main/packages/peasy-engine#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/peasy-lib/peasy-engine"
+    "url": "https://github.com/peasy-lib/peasy-lib/tree/main/packages/peasy-engine"
   },
   "bugs": {
-    "url": "https://github.com/peasy-lib/peasy-engine/issues"
+    "url": "https://github.com/peasy-lib/peasy-lib/issues"
   },
   "files": [
     "dist/**/*.cjs",

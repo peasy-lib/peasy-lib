@@ -61,6 +61,35 @@ const physicsEngine = Engine.create({ fps: 240, callback: update, started: false
 // Create world
 
 physicsEngine.start();
+
+// Clean up
+renderEngine.destroy();
+physicsEngine.destroy();
+```
+Setting `oneTime` to `true` will make an engine fire its callback once and then self-destruct.
+```ts
+const trapEngine = Engine.create({ ms: 5000, callback: triggerTrap, oneTime: true });
+
+trapEngine.pause(); // Now time is paused for this engine
+
+trapEngine.start(); // Time starts ticking again
+```
+In addition to controlling individual engines, Peasy Engine provides methods to control all engines that haven't been created with `isolated` set to `true`.
+```ts
+const renderEngine = Engine.create({ fps: 60, callback: render, isolated: true });
+Engine.create({ fps: 240, callback: updatePhysics });
+Engine.create({ ms: 5000, callback: triggerTrap, oneTime: true });
+
+// Pause and start all engines except renderEngine
+if (Input.is('menu')) {
+  Engine.pause();
+} else if (Input.is('close-menu')) {
+  Engine.start();
+}
+
+// Clean up
+renderEngine.destroy();
+Engine.destroy();
 ```
 
 ## Development and contributing

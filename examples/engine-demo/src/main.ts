@@ -12,32 +12,37 @@ async function main(): Promise<void> {
 }
 
 class App {
-  public deltaTime = 0;
-  public totalTime = 0;
-  public engine: Engine;
+  public deltaTimeRender = 0;
+  public totalTimeRender = 0;
+  public engineRender: Engine;
 
   public deltaTimePhysics = 0;
   public totalTimePhysics = 0;
   public enginePhysics: Engine;
 
+  public deltaTimeOneTime = 0;
+  public totalTimeOneTime = 0;
+  public engineOneTime: Engine;
+
   public constructor() {
-    this.engine = Engine.create(this.update);
+    this.engineRender = Engine.create(this.update);
     this.enginePhysics = Engine.create({ callback: this.updatePhysics, fps: 240, started: false });
+    this.engineOneTime = Engine.create({ callback: this.updateOneTime, ms: 2000, started: false, oneTime: true });
   }
 
   public update = (delta: number, total: number) => {
     // console.log('Update', delta, total, this);
-    this.deltaTime = delta;
-    this.totalTime = total;
+    this.deltaTimeRender = delta;
+    this.totalTimeRender = total;
   }
-  public start = () => {
-    this.engine.start();
+  public startRender = () => {
+    this.engineRender.start();
   }
-  public stop = () => {
-    this.engine.stop();
+  public stopRender = () => {
+    this.engineRender.stop();
   }
-  public pause = () => {
-    this.engine.pause();
+  public pauseRender = () => {
+    this.engineRender.pause();
   }
 
   public updatePhysics = (delta: number, total: number) => {
@@ -53,5 +58,31 @@ class App {
   }
   public pausePhysics = () => {
     this.enginePhysics.pause();
+  }
+
+  public updateOneTime = (delta: number, total: number) => {
+    this.deltaTimeOneTime = delta;
+    this.totalTimeOneTime = total;
+    alert('2 seconds runtime for one-time engine, creating new one-time engine');
+    this.engineOneTime = Engine.create({ callback: this.updateOneTime, ms: 2000, started: false, oneTime: true });
+  }
+  public startOneTime = () => {
+    this.engineOneTime.start();
+  }
+  public stopOneTime = () => {
+    this.engineOneTime.stop();
+  }
+  public pauseOneTime = () => {
+    this.engineOneTime.pause();
+  }
+
+  public start = () => {
+    Engine.start();
+  }
+  public stop = () => {
+    Engine.stop();
+  }
+  public pause = () => {
+    Engine.pause();
   }
 }

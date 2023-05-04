@@ -12,11 +12,11 @@
   <h2>Easy peasy engine</h2>
 
   <template id="app">
-    <div>Render engine: delta: ${deltaTime}, total: ${totalTime}</div>
+    <div>Render engine: delta: ${deltaTimeRender}, total: ${totalTimeRender}</div>
     <div>
-      <button pui="click @=> start">Start</button>
-      <button pui="click @=> stop">Stop</button>
-      <button pui="click @=> pause">Pause</button>
+      <button pui="click @=> startRender">Start</button>
+      <button pui="click @=> stopRender">Stop</button>
+      <button pui="click @=> pauseRender">Pause</button>
     </div>
     <br>
     <div>Physics engine: delta: ${deltaTimePhysics}, total: ${totalTimePhysics}</div>
@@ -24,6 +24,19 @@
       <button pui="click @=> startPhysics">Start</button>
       <button pui="click @=> stopPhysics">Stop</button>
       <button pui="click @=> pausePhysics">Pause</button>
+    </div>
+    <br>
+    <div>One-time engine: delta: ${deltaTimeOneTime}, total: ${totalTimeOneTime}</div>
+    <div>
+      <button pui="click @=> startOneTime">Start</button>
+      <button pui="click @=> stopOneTime">Stop</button>
+      <button pui="click @=> pauseOneTime">Pause</button>
+    </div>
+    <div>Controls all non-isolated (global) engines</div>
+    <div>
+      <button pui="click @=> start">Start</button>
+      <button pui="click @=> stop">Stop</button>
+      <button pui="click @=> pause">Pause</button>
     </div>
   </template>
 </body>

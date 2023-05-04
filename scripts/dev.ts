@@ -60,6 +60,7 @@ const validPackages = [
   'peasy-input',
   'peasy-physics',
   'peasy-assets',
+  'peasy-engine',
 ];
 
 const devPackages = (args.d ?? []) as string[];
@@ -91,8 +92,11 @@ const validApps = [
   'input-demo',
   'physics-demo',
   'assets-demo',
+  'engine-demo',
 
   'platformer-tutorial-1',
+  'todo-mvc',
+  '3d-world',
 ];
 
 if (apps.length > 0) {
