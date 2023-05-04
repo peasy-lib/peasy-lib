@@ -102,10 +102,18 @@ export class UIBinding {
       this.fromUI = false;
       this.element.addEventListener(this.attribute, this.triggerAtEvent);
     }
+    // TODO: Maybe do without listener?
+    if (this.toUI && this.fromUI && customElements.get(this.element.tagName.toLowerCase()) != null) {
+      this.element.addEventListener(this.attribute, this.twoWayBindingEvent);
+    }
   }
   public removeListener(): void {
     if (this.atEvent) {
       this.element.removeEventListener(this.attribute, this.triggerAtEvent);
+    }
+    // TODO: Maybe do without listener?
+    if (this.toUI && this.fromUI && customElements.get(this.element!.tagName.toLowerCase()) != null) {
+      this.element.removeEventListener(this.attribute, this.twoWayBindingEvent);
     }
   }
 
@@ -130,6 +138,8 @@ export class UIBinding {
       } else {
         this.lastValue = value;
       }
+      // TODO: Verify this outside of web component
+      this.parent.host?.dispatchEvent(new CustomEvent(property, { detail: value }));
     }
     this.views.forEach(view => view.updateFromUI());
   }
@@ -149,7 +159,7 @@ export class UIBinding {
             if (uiValue !== undefined && uiValue !== this.lastUIValue) {
               // console.log('Updating toUI');
               if (uiValue === this.attribute) {
-                this.views.push(UIView.create(this.element.parentElement!, this.template.cloneNode(true) as HTMLElement, this.object, { parent: this, prepare: false, sibling: this.element }));
+                this.views.push(UIView.create(this.element.parentElement!, this.object, this.template.cloneNode(true) as HTMLElement, { parent: this, prepare: false, sibling: this.element }));
               } else {
                 const view = this.views.pop();
                 view?.destroy();
@@ -232,7 +242,7 @@ export class UIBinding {
             // New view
             if (view == null) {
               const model = { $model: { [this.attribute]: item }, $parent: this.object };
-              const view = UIView.create(this.element.parentElement!, this.template.cloneNode(true) as HTMLElement, model, { parent: this, prepare: false, sibling: lastDoneUI?.element ?? this.element });
+              const view = UIView.create(this.element.parentElement!, model, this.template.cloneNode(true) as HTMLElement, { parent: this, prepare: false, sibling: lastDoneUI?.element ?? this.element });
               views.push(view);
               lastDoneUI = view;
               continue;
@@ -276,7 +286,7 @@ export class UIBinding {
             // New view
             if (!found) {
               const model = { $model: { [this.attribute]: item }, $parent: this.object };
-              const view = UIView.create(this.element.parentElement!, this.template.cloneNode(true) as HTMLElement, model, { parent: this, prepare: false, sibling: lastDoneUI?.element ?? this.element });
+              const view = UIView.create(this.element.parentElement!, model, this.template.cloneNode(true) as HTMLElement, { parent: this, prepare: false, sibling: lastDoneUI?.element ?? this.element });
               views.push(view);
               lastDoneUI = view;
             }
@@ -303,7 +313,7 @@ export class UIBinding {
           this.lastValue = value ?? component;
           const parentElement = this.element.nodeType === 8 ? this.element.parentElement! : this.element;
           const sibling = this.element.nodeType === 8 ? this.element : null;
-          this.lastUIValue = UI.create(parentElement, template, model, { parent: this, prepare: true, sibling });
+          this.lastUIValue = UI.create(parentElement, model, template, { parent: this, prepare: true, sibling });
           this.views.push(this.lastUIValue);
         }
       }
@@ -314,6 +324,10 @@ export class UIBinding {
           // console.log('Updating toUI');
           const { target, property } = UI.resolveProperty(this.element, this.attribute);
           target[property] = uiValue;
+          // TODO: Verify this (web components)
+          if ('setAttribute' in this.element) {
+            this.element.setAttribute(this.attribute, uiValue);
+          }
           this.lastValue = value;
           this.lastUIValue = uiValue;
         }
@@ -346,6 +360,27 @@ export class UIBinding {
       const callback = UI.resolveValue(this.object, this.property!);
       // TODO: Make callback send parent model for iterator/templates?
       callback(event, this.object.$model, this.element, this.attribute, this.object);
+    }
+  };
+
+  public twoWayBindingEvent = (event: any): void => {
+    // const { target, property } = UI.resolveProperty(this.element, this.attribute);
+    const { target, property } = UI.resolveProperty(this.object, this.property!);
+    const uiValue = event.detail;
+    // console.log('twoWay', this.element, this.attribute, this.property, uiValue);
+    if (uiValue !== this.lastUIValue) {
+      let value = uiValue;
+      // this.lastUIValue = uiValue;
+      if (value !== undefined && value !== this.lastValue) {
+        // this.lastValue = value;
+        if (UI.resolveValue(this.object, this.property!) === 'number' && !isNaN(value)) {
+          value = +value;
+        }
+        target[property] = value;
+      } else {
+        // this.lastValue = value;
+        target[property] = value;
+      }
     }
   };
 

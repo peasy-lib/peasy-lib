@@ -3,6 +3,14 @@ import { UIAnimation } from './ui-animation';
 import { IUIBinding, toUICallback, UIBinding } from "./ui-binding";
 import { UIView } from "./ui-view";
 
+export type WebComponent = {
+  webComponent: string;
+  template: string;
+  observedAttributes?: string[];
+  observedProperties?: string[];
+  create?: () => InstanceType<any>;
+};
+
 // Export is at bottom of file!
 class _UI {
   // public static bindings: Record<string, UIBinding> = {};
@@ -18,7 +26,8 @@ class _UI {
 
   private static readonly regexReplace = /([\S\s]*?)\\?\$\{([^}]*?[<=@!]=[*=>|][^}]*?)\}([\S\s]*)/m;
   private static readonly regexAttribute = /^\s*(\S*?)\s*([<=@!])=([*=>|])\s*(\S*?)\s*$/;
-  private static readonly regexValue = /(?<before>[\S\s]*?)\\?\$\{\s*(?<property>[\s\S]*?)\s*\}(?<after>[\S\s]*)/m;
+  private static readonly regexValue = /(?<before>[\S\s]*?)\\?\$\{\s*(?<property>[\s\S]*?)\s*\}(?<after>[\S\s]*)/m; // /^\{(?:[^{}]|(\1))*\}$/;
+
   private static readonly regexConditionalValue = /^\s*(.+?)\s*([=!])\s*(\S+)/;
   private static readonly regexSplitConditionalValue = /^(.+?)([=!])(.*)/;
 
@@ -29,6 +38,9 @@ class _UI {
   private static loadResolve: () => void;
 
   public static initialize(rafOrInterval: boolean | number = true): void {
+    if (this.initialized) {
+      return;
+    }
     this.initialized = true;
 
     this.loadPromise = new Promise(res => this.loadResolve = res);
@@ -77,7 +89,19 @@ class _UI {
     // });
   }
 
-  public static create(parent: HTMLElement, template: string | HTMLElement, model = {}, options: { parent: any; prepare: boolean; sibling: any } = { parent: null, prepare: true, sibling: null }): UIView {
+  public static create(parent: HTMLElement | string = document.body, model = {}, template: string | HTMLElement | null = null, options: { parent: any; prepare: boolean; sibling: any; host?: Element } = { parent: null, prepare: true, sibling: null }): UIView {
+    // public static create(parent: HTMLElement, template: string | HTMLElement, model = {}, options: { parent: any; prepare: boolean; sibling: any; host?: Element } = { parent: null, prepare: true, sibling: null }): UIView {
+    if (typeof parent === 'string') {
+      parent = document.querySelector(parent) as HTMLElement;
+    }
+    if (typeof model === 'string' || model instanceof HTMLElement) {
+      console.warn('Old parameter order to UI.create!');
+      [model, template] = [template!, model];
+    }
+    let hasTemplate = true;
+    if (template == null) {
+      hasTemplate = false;
+    }
     if (typeof template === 'string') {
       const doc = parent?.ownerDocument?.defaultView != null ? parent.ownerDocument : document; // as any;
       // while (doc.parentNode != null) {
@@ -93,10 +117,16 @@ class _UI {
       }
     }
 
-    const view = UIView.create(parent, template, model, options);
+    const view = UIView.create(parent, model, template, options);
     if (view.parent === UI) {
       this.views.push(view);
       // console.log('VIEWS', this.views);
+    }
+    // TODO: Review this (obviously)
+    if (!hasTemplate) {
+      // this.views.forEach(view => view.updateFromUI());
+      // this.views.forEach(view => view.updateFromUI());
+      // this.update();
     }
     if (!this.initialized) {
       this.initialize();
@@ -116,12 +146,28 @@ class _UI {
     this._nextQueue.push(func);
   }
 
-  public static register(name: string, cls: any): void {
-    this.registrations[name] = cls;
+  public static register(name: string, classForName: any): void;
+  public static register(webComponent: any): void;
+  public static register(nameOrWebComponent: string | any, classOrName?: string | any): void | any {
+    if (typeof nameOrWebComponent === 'string') {
+      this.registrations[nameOrWebComponent] = classOrName;
+      return;
+    }
+
+    this.registerWebComponent(classOrName, nameOrWebComponent);
   }
 
   public static parse(element: Element, object: any, view: UIView, parent: any): UIBinding[] {
     const bindings: UIBinding[] = [];
+
+    // Don't process comments
+    if (element instanceof Comment) {
+      return [];
+    }
+    // Templates are separate parts and should not be processed
+    if (element instanceof HTMLTemplateElement || element.tagName === 'TEMPLATE') {
+      return [];
+    }
     if (element.nodeType === 3) { // text
       let text = element.textContent;
       let match = text!.match(this.regexValue);
@@ -139,7 +185,15 @@ class _UI {
         const propertyMatch = property.match(this.regexConditionalValue);
         let value;
         let toUI: boolean | toUICallback = true;
-        if (propertyMatch) {
+        // TODO: Maybe remove this (template expressions support)
+        if (property.startsWith('(')) {
+          const newProperty = `_pui${this.bindingCounter++}`;
+          Object.defineProperty(object, newProperty, {
+            // eslint-disable-next-line @typescript-eslint/no-implied-eval, no-new-func
+            get: new Function(`return ${property}`) as any
+          });
+          property = newProperty;
+        } else if (propertyMatch) {
           property = propertyMatch[3];
           value = `${propertyMatch[2]}${propertyMatch[1]}`;
           toUI = function (value, _lastValue, property, _object, fixedValue) {
@@ -259,7 +313,7 @@ class _UI {
             } else if (fromUI === '|') { // attr ==| prop one time
               oneTime = true;
             } else if (name !== 'checked') {
-              element.setAttribute(name, '');
+              element.setAttribute(name, element.getAttribute?.(name) ?? '');
             }
           }
           return [this.bind({
@@ -592,6 +646,75 @@ class _UI {
       parent: view,
       oneTime,
     })];
+  }
+
+  private static registerWebComponent(name: string, component: WebComponent): any {
+    name ??= component.webComponent;
+
+    class WebComponentWrapper extends HTMLElement {
+      public static observedAttributes: string[] = component.observedAttributes ?? [];
+      public static observedProperties: string[] = component.observedProperties ?? WebComponentWrapper.observedAttributes;
+
+      public readonly webComponentComponent = component;
+      public webComponentUIView: UIView | null = null;
+
+      public constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+      }
+
+      public connectedCallback() {
+        this.initialize();
+        // console.log('MyComponent added to the DOM', this.shadowRoot!.host);
+      }
+
+      public disconnectedCallback() {
+        this.terminate();
+        // console.log('MyComponent removed from the DOM');
+      }
+
+      public attributeChangedCallback(name: string, oldVal: string, newVal: string) {
+        this.initialize();
+        // console.log(`Attribute "${name}" changed from "${oldVal}" to "${newVal}"`, this.webComponentUIView, this);
+        this.webComponentUIView!.model[name] = newVal;
+      }
+
+      public initialize(): void {
+        if (this.webComponentUIView == null) {
+          const component = 'create' in this.webComponentComponent ? this.webComponentComponent.create!() : new (this.webComponentComponent as any)();
+          component.webComponentHost = this;
+          this.webComponentUIView = UI.create(this.shadowRoot, component, this.webComponentComponent.template, { host: this.shadowRoot?.host }) as UIView;
+        }
+      }
+      private terminate(): void {
+        if (this.webComponentUIView != null) {
+          this.webComponentUIView.destroy();
+        }
+      }
+    }
+
+    const properties = [...new Set([...WebComponentWrapper.observedAttributes, ...WebComponentWrapper.observedProperties])];
+    for (const property of properties) {
+      Object.defineProperty(WebComponentWrapper.prototype, property, {
+        configurable: true,
+        enumerable: false,
+        get(this: WebComponentWrapper) {
+          return this.webComponentUIView!.model[property];
+        },
+        set(this: WebComponentWrapper, v: unknown) {
+          if (WebComponentWrapper.observedAttributes.includes(property)) {
+            this.setAttribute(property, v as string);
+          } else {
+            this.initialize();
+            this.webComponentUIView!.model[property] = v;
+          }
+        }
+      });
+    }
+
+    customElements.define(name, WebComponentWrapper);
+
+    return WebComponentWrapper;
   }
 }
 

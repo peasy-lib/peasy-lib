@@ -7,6 +7,7 @@ export class UIView {
   public parent!: typeof UI | UIBinding | UIView;
   public model: any;
   public element!: HTMLElement;
+  public host?: Element | null = null; // Web component host
   public bindings: UIBinding[] = [];
   public views: UIView[] = [];
   public animations: UIAnimation[] = [];
@@ -19,25 +20,26 @@ export class UIView {
   private parentElement!: HTMLElement;
   private sibling!: HTMLElement | null;
 
-  public static create(parent: HTMLElement, template: HTMLElement, model = {}, options: { parent: any; prepare: boolean; sibling: any } = { parent: null, prepare: true, sibling: null }): UIView {
+  public static create(parent: HTMLElement, model = {}, template: HTMLElement | null, options: { parent: any; prepare: boolean; sibling: any; host?: Element } = { parent: null, prepare: true, sibling: null }): UIView {
     const view = new UIView();
 
     view.model = model;
-    view.element = template;
+    view.element = template ?? parent;
     view.parent = (options.parent ?? UI);
-    if (template instanceof HTMLTemplateElement || template.tagName === 'TEMPLATE') {
+    view.host = options.host ?? view.parent.host;
+    if (template instanceof HTMLTemplateElement || template?.tagName === 'TEMPLATE') {
       const content = (template as HTMLTemplateElement).content.cloneNode(true) as HTMLElement;
       if (content.children.length === 1) {
         // console.log('TEMPLATE, single child');
-        return UI.create(parent, content.firstElementChild as HTMLElement, model, options);
+        return UI.create(parent, model, content.firstElementChild as HTMLElement, options);
       }
       // console.log('TEMPLATE, many children');
-      view.views = [...content.children].map(child => UI.create(parent, child as HTMLElement, model, { ...options, ...{ parent: view } }));
+      view.views = [...content.children].map(child => UI.create(parent, model, child as HTMLElement, { ...options, ...{ parent: view } }));
       view.state = 'rendered';
     } else {
       view.bindings.push(...UI.parse(view.element, model, view, options.parent));
     }
-    view.parentElement = parent;
+    view.parentElement = template != null ? parent : parent.ownerDocument.documentElement;
     view.sibling = options.sibling;
 
     // console.log('Not TEMPLATE');
