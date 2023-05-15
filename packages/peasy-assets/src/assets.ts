@@ -18,6 +18,8 @@ export class Assets {
     audio: {},
     font: {},
   };
+  public static requested = 0;
+  public static loaded = 0;
 
   public static types: Record<string, string> = {
     image: 'image',
@@ -38,6 +40,10 @@ export class Assets {
     audio: Assets.loadAudio,
     font: Assets.loadFont,
   };
+
+  public static get pending(): number {
+    return this.requested - this.loaded;
+  }
 
   public static initialize(input: IAssets = {}) {
     Assets.initialized = true;
@@ -69,10 +75,24 @@ export class Assets {
           name = parts.join('.');
         }
       }
+      Assets.requested++;
       const promise = loader(src, asset);
       Assets.assets[type][name] = await promise;
+      Assets.loaded++;
       return promise;
     }));
+  }
+
+  public static clear(): Promise<void> {
+    Assets.assets = {
+      image: {},
+      audio: {},
+      font: {},
+    };
+    Assets.requested = 0;
+    Assets.loaded = 0;
+    // TODO: Make a proper promise that first makes sure nothing is pending
+    return Promise.resolve();
   }
 
   public static image(name: string): HTMLImageElement {
