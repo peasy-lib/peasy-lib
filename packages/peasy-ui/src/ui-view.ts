@@ -15,18 +15,18 @@ export class UIView {
   public destroyed: '' | 'queue' | 'destroy' | 'destroyed' = '';
   public moved: '' | 'queue' | 'move' = '';
 
-  public attached!: Promise<UIView>;
-  private attachResolve: any;
+  public attached!: Promise<void>;
+  private attachResolve!: () => void;
   private parentElement!: HTMLElement;
   private sibling!: HTMLElement | null;
 
-  public static create(parent: HTMLElement, model = {}, template: HTMLElement | null, options: { parent: any; prepare: boolean; sibling: any; host?: Element } = { parent: null, prepare: true, sibling: null }): UIView {
+  public static create(parent: HTMLElement, model = {}, template: HTMLElement | null, options: { parent?: any; prepare?: boolean; sibling?: any; host?: Element } = { parent: null, prepare: true, sibling: null }): UIView {
     const view = new UIView();
 
     view.model = model;
     view.element = template ?? parent;
     view.parent = (options.parent ?? UI);
-    view.host = options.host ?? view.parent.host;
+    view.host = options.host ?? (view.parent as UIView).host;
     if (template instanceof HTMLTemplateElement || template?.tagName === 'TEMPLATE') {
       const content = (template as HTMLTemplateElement).content.cloneNode(true) as HTMLElement;
       if (content.children.length === 1) {
@@ -43,9 +43,13 @@ export class UIView {
     view.sibling = options.sibling;
 
     // console.log('Not TEMPLATE');
-    view.attached = new Promise<UIView>((resolve) => {
-      view.attachResolve = resolve;
-    });
+    if (view.views.length > 1) {
+      view.attached = Promise.all(view.views.map(v => v.attached)) as unknown as Promise<void>;
+    } else {
+      view.attached = new Promise((resolve) => {
+        view.attachResolve = resolve;
+      });
+    }
 
     return view;
   }
@@ -69,9 +73,9 @@ export class UIView {
       this.element.parentElement?.removeChild(this.element);
       this.bindings.forEach(binding => binding.unbind());
 
-      const index = this.parent.views.findIndex((view: UIView) => view === this);
+      const index = (this.parent as UIView).views.findIndex((view: UIView) => view === this);
       if (index > -1) {
-        this.parent.views.splice(index, 1);
+        (this.parent as UIView).views.splice(index, 1);
       }
     });
     this.destroyed = 'destroyed';
@@ -189,6 +193,6 @@ export class UIView {
   private getAnimations(subtree = true) {
     return this.element.getAnimations({ subtree })
       .filter(animation => animation.playState !== 'finished' && animation.effect?.getTiming().iterations !== Infinity)
-      .map(animation => animation.finished)
+      .map(animation => animation.finished);
   }
 }
