@@ -94,7 +94,8 @@ async function main2(): Promise<void> {
     public view: UIView;
     public template: string;
 
-    public enter(previous: State | null) {
+    public enter(previous: State | null, ...params: any[]) {
+      console.log('enter', this.constructor.name, params);
       this.view = UI.create(document.querySelector('#viewport') as HTMLElement, this, this.template);
     }
     public leave() {
@@ -119,9 +120,13 @@ async function main2(): Promise<void> {
       this.router.register(...routes);
       this.router.set(Menu);
 
-      Input.map({ 1: 'Menu', 2: 'Lobby', 3: 'Login' }, (action: string, doing: boolean) => {
+      Input.map({ 1: 'Menu', 2: 'Lobby', 3: 'Login', 4: 'Login4' }, (action: string, doing: boolean) => {
         if (doing) {
-          this.router.set(action);
+          if (action === 'Login4') {
+            this.router.set('Login', 0, 4);
+          } else {
+            this.router.set(action);
+          }
         }
       });
     }

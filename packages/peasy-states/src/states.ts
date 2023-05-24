@@ -3,6 +3,7 @@ import { State } from './index';
 export class States {
   public states = new Map<string | typeof State, State>();
   public current: State | null = null;
+  public currentParams: any[] = [];
   public currentTime: number = 0;
 
   public constructor() { }
@@ -41,7 +42,18 @@ export class States {
     const next = typeof state === 'string' || (state != null && 'prototype' in state) ? this.states.get(state) ?? null : state;
 
     if ((next ?? null) == (this.current ?? null)) {
-      return;
+      if (params.length === this.currentParams.length) {
+        let sameParams = true;
+        for (let i = 0; i < params.length; i++) {
+          if (params[i] !== this.currentParams[i]) {
+            sameParams = false;
+            break;
+          }
+        }
+        if (sameParams) {
+          return;
+        }
+      }
     }
 
     let leaving: void | Promise<void>;
@@ -57,10 +69,12 @@ export class States {
         if (entering instanceof Promise) {
           return entering.then(() => {
             this.current = next;
+            this.currentParams = [...params];
             this.currentTime = now;
           });
         }
         this.current = next;
+        this.currentParams = [...params];
         this.currentTime = now;
       });
     }
@@ -71,10 +85,12 @@ export class States {
     if (entering instanceof Promise) {
       return entering.then(() => {
         this.current = next;
+        this.currentParams = [...params];
         this.currentTime = now;
       });
     }
     this.current = next;
+    this.currentParams = [...params];
     this.currentTime = now;
   }
 
