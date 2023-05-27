@@ -8,7 +8,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 async function main(): Promise<void> {
   const app = new App();
-  UI.create(document.body, '#app', app);
+  UI.create(document.body, app, '#app');
 }
 
 class App {
@@ -24,10 +24,14 @@ class App {
   public totalTimeOneTime = 0;
   public engineOneTime: Engine;
 
+  public engineAsync: Engine;
+
   public constructor() {
     this.engineRender = Engine.create(this.update);
     this.enginePhysics = Engine.create({ callback: this.updatePhysics, fps: 240, started: false });
     this.engineOneTime = Engine.create({ callback: this.updateOneTime, ms: 2000, started: false, oneTime: true });
+
+    this.engineAsync = Engine.create(this.updateAsync);
   }
 
   public update = (delta: number, total: number) => {
@@ -74,6 +78,12 @@ class App {
   }
   public pauseOneTime = () => {
     this.engineOneTime.pause();
+  }
+
+  public updateAsync = async (delta: number, total: number) => {
+    console.log('async start');
+    await new Promise<void>((res) => setTimeout(() => { console.log('resolving async'); res(); }, 200));
+    console.log('async end');
   }
 
   public start = () => {

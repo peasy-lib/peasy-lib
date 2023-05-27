@@ -1,4 +1,4 @@
-export type EngineCallback = (deltaTime: number, runtime: number) => void;
+export type EngineCallback = (deltaTime: number, runtime: number) => void | Promise<void>;
 
 export interface IEngine {
   callback: EngineCallback;
@@ -17,6 +17,7 @@ export class Engine {
 
   private started = false;
   private paused = false;
+  private destroyed = false;
   private lastTime = 0;
   private resetThreshold = 1000;
   private timeSinceLast = 0;
@@ -86,6 +87,7 @@ export class Engine {
   }
 
   public destroy(): void {
+    this.destroyed = true;
     this.stop();
     const index = Engine.engines.indexOf(this);
     if (index >= 0) {
@@ -119,17 +121,42 @@ export class Engine {
 
     this.timeSinceLast += deltaTime;
 
-    let ticked = false;
-    while (this.timeSinceLast >= this.interval) {
-      this.callback(this.interval, this.accTime);
-      this.accTime += this.interval;
-      this.timeSinceLast -= this.interval;
-      ticked = true;
-    }
-    if (this.oneTime && ticked) {
-      this.destroy();
+    // let ticked = false;
+    // while (this.timeSinceLast >= this.interval) {
+    //   const result = this.callback(this.interval, this.accTime);
+    //   this.accTime += this.interval;
+    //   this.timeSinceLast -= this.interval;
+    //   ticked = true;
+
+    // }
+    // if (this.oneTime && ticked) {
+    //   this.destroy();
+    // } else {
+    //   requestAnimationFrame(this.tick);
+    // }
+    const result = this.call();
+    if (result instanceof Promise) {
+      void result.then(() => requestAnimationFrame(this.tick));
     } else {
       requestAnimationFrame(this.tick);
     }
+  };
+
+  private readonly call = (): boolean | Promise<boolean> => {
+    if (this.timeSinceLast >= this.interval) {
+      const result = this.callback(this.interval, this.accTime);
+      this.accTime += this.interval;
+      this.timeSinceLast -= this.interval;
+      if (this.oneTime) {
+        this.destroy();
+      }
+      if (result instanceof Promise) {
+        return result.then(() => this.call());
+      } else {
+        void this.call();
+      }
+      return true;
+    }
+    return false;
   };
 }

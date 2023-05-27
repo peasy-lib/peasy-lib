@@ -1,6 +1,6 @@
 {
   "name": "@peasy-lib/peasy-engine",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "main": "dist/index.js",
   "module": "dist/esm/index.mjs",
   "exports": {
