@@ -57,9 +57,12 @@ export class Assets {
       if (typeof asset === 'string') {
         asset = { src: asset };
       }
-      const src = `${Assets.sources.default}${asset.src ?? ''}`;
+      const src = !(asset.src ?? '').startsWith('data:') ? `${Assets.sources.default}${asset.src ?? ''}` : asset.src ?? '';
       const type = asset.family != null ? 'font'
-        : Assets.types[asset.type ?? src.split('.').pop() ?? ''] as 'image' | 'audio';
+        : (src.startsWith('data:')
+          ? src.slice('data:'.length, src.indexOf('/'))
+          : Assets.types[asset.type ?? src.split('.').pop() ?? '']
+        ) as 'image' | 'audio';
       const loader = Assets.loaders[type];
       if (loader == null) {
         return null;
@@ -76,7 +79,12 @@ export class Assets {
         }
       }
       Assets.requested++;
-      const promise = loader(src, asset);
+      let promise;
+      if ((src as unknown as typeof Image) instanceof Image) {
+        promise = Promise.resolve(src);
+      } else {
+        promise = loader(src, asset);
+      }
       Assets.assets[type][name] = await promise;
       Assets.loaded++;
       return promise;
@@ -105,13 +113,18 @@ export class Assets {
     return Assets.assets.font[name];
   }
 
-  public static loadImage(url: string): Promise<HTMLImageElement> {
+  public static loadImage(src: string): Promise<HTMLImageElement> {
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises, no-async-promise-executor
     return new Promise(async (resolve) => {
       const img = new Image();
       img.onprogress = (...args) => console.log('progress', args);
       img.onload = () => resolve(img);
       // img.src = url;
-      img.src = await fetch(url).then(res => res.url);
+      if (src.startsWith('data:')) {
+        img.src = src;
+      } else {
+        img.src = await fetch(src).then(res => res.url);
+      }
     });
   }
 
