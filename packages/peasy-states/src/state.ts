@@ -2,7 +2,7 @@ import { States } from './states';
 
 export class State {
   public constructor(
-    public states: States | null,
+    public states: States,
     public name: string,
   ) { }
 
