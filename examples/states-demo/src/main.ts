@@ -94,9 +94,14 @@ async function main2(): Promise<void> {
     public view: UIView;
     public template: string;
 
+    public counter = 0;
+
     public enter(previous: State | null, ...params: any[]) {
-      console.log('enter', this.constructor.name, params);
+      console.log('enter', this.constructor.name, ++this.counter, params);
       this.view = UI.create(document.querySelector('#viewport') as HTMLElement, this, this.template);
+    }
+    public repeat(...params: any[]) {
+      console.log('repeat', this.constructor.name, ++this.counter, params);
     }
     public leave() {
       this.view.destroy();
@@ -107,6 +112,10 @@ async function main2(): Promise<void> {
   }
   class Lobby extends Route {
     public template = '<div>Lobby</div>';
+    public leave() {
+      super.leave();
+      this.states.reset(this);
+    }
   }
   class Login extends Route {
     public template = '<div>Login</div>';

@@ -11,10 +11,10 @@
     "now": "rimraf dist && webpack --config webpack.config.js && cd dist && now && cd .."
   },
   "dependencies": {
-    "@peasy-lib/peasy-states": "0.1.3",
+    "@peasy-lib/peasy-states": "0.1.4",
     "@peasy-lib/peasy-engine": "0.3.0",
     "@peasy-lib/peasy-input": "0.2.0",
-    "@peasy-lib/peasy-ui": "0.9.46"
+    "@peasy-lib/peasy-ui": "0.9.50"
   },
   "devDependencies": {
     "@types/node": "^17.0.23",

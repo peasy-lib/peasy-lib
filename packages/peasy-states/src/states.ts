@@ -51,7 +51,7 @@ export class States {
           }
         }
         if (sameParams) {
-          return;
+          return next?.repeat(...params);
         }
       }
     }
@@ -102,6 +102,28 @@ export class States {
       state: this.current,
       since: this.currentTime,
     };
+  }
+
+  public reset(state: string | State | typeof State | null): void {
+    let instance = typeof state === 'string' || (state != null && 'prototype' in state) ? this.states.get(state) ?? null : state;
+    let type: typeof State;
+    let name: string;
+    const keys = [];
+    for (const [key, value] of this.states.entries()) {
+      if (value === instance) {
+        keys.push(key);
+        if (typeof key === 'string') {
+          name = key;
+        } else {
+          type = key;
+        }
+      }
+    }
+    instance = new type!(this, name!);
+    console.log('RESET STATE', state, instance, type!);
+    for (const key of keys) {
+      this.states.set(key, instance);
+    }
   }
 
   public update(...params: any[]): void | Promise<void> {
