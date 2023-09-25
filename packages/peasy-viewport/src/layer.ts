@@ -19,6 +19,8 @@ export class Layer {
   public zIndex?: number;
 
   public element?: HTMLElement;
+  public contentElement?: HTMLElement;
+  public ownsContentElement = true;
 
   public image?: string;
   public repeatX = false;
@@ -127,7 +129,12 @@ export class Layer {
     }
     layer.parallax.x = 1 - (parallax.x ?? layer.parallax.x);
     layer.parallax.y = 1 - (parallax.y ?? layer.parallax.y);
-    console.log(layer.name, layer.parallax, parallax);
+
+    const contentElement = input.element;
+    if (contentElement != null) {
+      layer.contentElement = contentElement;
+      layer.ownsContentElement = false;
+    }
 
     layer.update();
 
@@ -161,108 +168,12 @@ export class Layer {
       latestCamera.x = cameraX;
       latestCamera.y = cameraY;
     }
-    // const entity = this._entity;
-    // const light = this._light;
-
-    // if (this._lightVersion === light.version && this._entityVersion === entity.version) {
-    //   return;
-    // }
-    // const lightUpdates = this._updates.light;
-    // const entityUpdates = this._updates.entity;
-
-    // const updated = [];
-    // if (entityUpdates.size !== entity.updates.size) {
-    //   updated.push('size');
-    // } else if (lightUpdates.position !== light.updates.position || entityUpdates.position !== entity.updates.position) {
-    //   updated.push('position');
-    // } else if (entityUpdates.orientation !== entity.updates.orientation) {
-    //   updated.push('orientation');
-    // }
-    // if (entityUpdates.scale !== entity.updates.scale) {
-    //   updated.push('scale');
-    // }
-    // if (entityUpdates.offset !== entity.updates.offset) {
-    //   updated.push('offset');
-    // }
-
-    // this._lightVersion = light.version;
-    // this._entityVersion = entity.version;
-
-    // if (updated.length === 0) {
-    //   return;
-    // }
-
-    // const style = this._element.style;
-
-    // for (const update of updated) {
-    //   // console.log('light-entity update', update, entityUpdates, entity.updates, lightUpdates, light.updates);
-    //   switch (update) {
-    //     case 'size':
-    //       style.width = `${entity.size.x}px`;
-    //       style.height = `${entity.size.y}px`;
-    //       entityUpdates.size = entity.updates.size;
-    //     // Also update position if size changes
-    //     // eslint-disable-next-line no-fallthrough
-    //     case 'position': {
-    //       this._distance = Math.round(light.position.subtract(entity.position).magnitude);
-
-    //       const zDistance = Math.abs(this._light.zIndex - this._entity.zIndex);
-    //       this._zModifier = Math.max(5 - zDistance, 0) / 5;
-    //       // console.log('zModifier', zDistance, this._zModifier);
-    //       // this._distance = this._distance * zDistance;
-    //       entityUpdates.position = entity.updates.position;
-    //       lightUpdates.position = light.updates.position;
-    //     }
-    //     // If only orientation changes, distance remains the same
-    //     // eslint-disable-next-line no-fallthrough
-    //     case 'orientation': {
-    //       const redStyle = this._red.style;
-    //       const greenStyle = this._green.style;
-    //       const blueStyle = this._blue.style;
-    //       const frontShadowStyle = this._frontShadowElement.style;
-    //       const frontShadowOpacityStyle = this._frontShadowOpacityElement.style;
-
-    //       this._normalized = light.position
-    //         .subtract(entity.position).rotate(-entity.orientation, true)
-    //         .normalize(true);
-
-    //       style.translate = `${entity.left} ${entity.top}`;
-    //       style.rotate = `${entity.orientation}deg`;
-    //       redStyle.opacity = `${this._redOpacity}`;
-    //       greenStyle.opacity = `${this._greenOpacity}`;
-    //       blueStyle.opacity = `${this._blueOpacity}`;
-    //       redStyle.filter = `url(${this._redFilter})`;
-    //       greenStyle.filter = `url(${this._greenFilter})`;
-    //       blueStyle.filter = `url(${this._blueFilter})`;
-
-    //       frontShadowStyle.opacity = `${this._frontShadowVisibility}`;
-    //       frontShadowOpacityStyle.opacity = `${this._frontShadowOpacity}`;
-
-    //       entityUpdates.orientation = entity.updates.orientation;
-    //       break;
-    //     }
-    //     case 'scale':
-    //       this._element.style.scale = entity.scale;
-
-    //       entityUpdates.scale = entity.updates.scale;
-    //       break;
-    //     case 'offset':
-    //       this._redNormal.style.backgroundPosition = `${entity.offset.x}px ${entity.offset.y}px`;
-    //       this._greenNormal.style.backgroundPosition = `${entity.offset.x}px ${entity.offset.y}px`;
-    //       this._blueNormal.style.backgroundPosition = `${entity.offset.x}px ${entity.offset.y}px`;
-    //       this._frontShadowElement.style.backgroundPosition = `${entity.offset.x}px ${entity.offset.y}px`;
-    //       this._frontShadowOpacityElement.style.backgroundPosition = `${entity.offset.x}px ${entity.offset.y}px`;
-
-    //       entityUpdates.offset = entity.updates.offset;
-    //       break;
-    //   }
-    // }
   }
 
   private _createElements() {
     const parent = this.viewport.element;
     parent.insertAdjacentHTML('beforeend', `
-      <div class="layer ${this.name ?? ''}" style="
+      <div class="layer ${this.name ?? ''}" ${this.id ? ` id="${this.id}"` : ''} style="
         position: absolute;
         left: ${this.position.x}px;
         top: ${this.position.y}px;
@@ -271,23 +182,31 @@ export class Layer {
       "></div>
       `);
     this.element = parent.lastElementChild as HTMLElement;
-    if (this.isImage) {
-      this.element.insertAdjacentHTML('beforeend', `
+    if (this.contentElement != null) {
+      this.element.insertBefore(this.contentElement, null);
+    } else {
+      if (this.isImage) {
+        this.element.insertAdjacentHTML('beforeend', `
         <div class="image" style="
-          background-image: url('${this.image}');
-          width: 100%;
-          height: 100%;
+        background-image: url('${this.image}');
+        width: 100%;
+        height: 100%;
         "></div>
-      `);
-    }
-    if (this.isCanvas) {
-      this.element.insertAdjacentHTML('beforeend', `
+        `);
+        this.contentElement = this.element.lastElementChild as HTMLElement;
+      }
+      if (this.isCanvas) {
+        this.element.insertAdjacentHTML('beforeend', `
         <canvas class="canvas" width="${this.size.x}" height="${this.size.y}" style="
-          width: 100%;
-          height: 100%;
+        width: 100%;
+        height: 100%;
         "></canvas>
         `);
-      this.ctx = (this.element.lastElementChild as HTMLCanvasElement).getContext(this.canvasContext!) as CanvasRenderingContext2D;
+        this.contentElement = this.element.lastElementChild as HTMLElement;
+      }
+    }
+    if (this.isCanvas) {
+      this.ctx = (this.contentElement as HTMLCanvasElement).getContext(this.canvasContext!) as CanvasRenderingContext2D;
     }
   }
 }

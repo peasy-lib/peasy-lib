@@ -45,9 +45,9 @@ export class App {
       { parallax: 0.25, image: 'assets/city-background/layer_02_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
       { parallax: 0, image: 'assets/city-background/layer_01_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
       { name: 'world', parallax: 0 },
-      { name: 'effects', canvasContext: '2d' },
+      { name: 'effects', canvasContext: '2d', /* element: document.querySelector('#external') */ },
       { parallax: -0.2, image: 'assets/city-background/layer_02_1920 x 1080.png', size: { x: 1920, y: 1080 }, position: { x: 0, y: 270 }, repeatX: true },
-      { name: 'HUD' },
+      { name: 'HUD', id: 'HUD' },
     ]);
     console.log(this);
 
