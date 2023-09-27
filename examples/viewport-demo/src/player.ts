@@ -1,9 +1,13 @@
+import { Vector } from '@peasy-lib/peasy-viewport';
 import { App } from './app';
 import { Gravel } from './gravel';
 
 export class Player {
-  public x = 200;
-  public y = 780;
+  public startX = 0; //200;
+  public startY = 0; // 780;
+
+  public x = this.startX;
+  public y = this.startY;
   public jumping = false;
   public jumpStep = 0;
   public jumpHeight = 40;
@@ -31,14 +35,16 @@ export class Player {
         this.y += 2;
         this.jumpStep -= 2;
       } else {
-        this.y = 780;
+        this.y = this.startY;
         this.jumpStep = 0;
         this.jumping = false;
 
-        Gravel.create(app, this.x + 16, this.y + 64 + 2);
+        const { x, y } = app.viewport.translate(new Vector(this.x + 16, this.y + 64 + 2), app.viewport.getLayer('world'), app.viewport.getLayer('effects'));
+        Gravel.create(app, x, y);
       }
     }
-    app.setCamera(this.x - 200, this.y - 780);
+    // app.setCamera(this.x - this.startX, this.y - this.startY);
+    app.setCamera(this.x, this.y);
   }
 }
 

@@ -14,13 +14,16 @@ export class Layer {
   public id?: string;
   public name?: string;
   public size = new Vector();
+  public sizeRepeated = new Vector();
   public position = new Vector();
+  public origin = new Vector();
 
   public zIndex?: number;
 
   public element?: HTMLElement;
   public contentElement?: HTMLElement;
   public ownsContentElement = true;
+  public before?: HTMLElement;
 
   public image?: string;
   public repeatX = false;
@@ -32,7 +35,7 @@ export class Layer {
   public parallax = { x: 1, y: 1 };
 
   private readonly _latest = {
-    camera: { x: 0, y: 0 },
+    camera: { x: 0, y: 0, zoom: 1 },
   };
 
   public version = 0;
@@ -72,19 +75,55 @@ export class Layer {
   // }
 
   public get x(): number {
+    const x = this.position.x - (this.size.x / 2) + this.viewport.half.x;
+    const camera = this.camera.x * this.parallax.x;
     if (this.repeatX) {
-      const width = this.size.x / 3;
-      return ((this.position.x - this.camera.x * this.parallax.x) % width) - width;
+      const width = this.size.x;
+      return ((x - camera) % width) - width;
     }
-    return this.position.x - this.camera.x * this.parallax.x;
+    return x - camera;
   }
   public get y(): number {
+    const y = this.position.y - (this.size.y / 2) + this.viewport.half.y;
+    const camera = this.camera.y * this.parallax.y;
     if (this.repeatY) {
-      const height = this.size.y / 3;
-      return ((this.position.y - this.camera.y * this.parallax.y) % height) - height;
+      const height = this.size.y;
+      return ((y - camera) % height) - height;
     }
-    return this.position.y - this.camera.y * this.parallax.y;
+    return y - camera;
   }
+  // public get x(): number {
+  //   const zoom = this.camera.zoom;
+  //   const x = this.position.x * zoom;
+  //   const camera = this.camera.x * this.parallax.x * zoom;
+  //   let centering = this.size.x / 2 * zoom;
+  //   if (this.repeatX) {
+  //     centering /= 3;
+  //     const width = this.size.x * zoom / 3;
+  //     return ((x - camera) % width) - width + centering;
+  //   }
+  //   return x - camera + centering;
+  // }
+  // public get y(): number {
+  //   const zoom = this.camera.zoom;
+  //   const y = this.position.y - (this.size.y * zoom / 2) + this.viewport.half.y;
+  //   const camera = this.camera.y * this.parallax.y * zoom;
+  //   // const centering = ((this.size.x / 2) - this.viewport.half.y) * zoom;
+  //   return y - camera;
+
+  //   // const y = this.position.y * zoom;
+  //   // const camera = this.camera.y * this.parallax.y * zoom;
+  //   // // const centering = this.viewport.half.y * zoom;
+  //   // let centering = this.size.y / 2 * zoom;
+  //   // if (this.repeatY) {
+  //   //   centering /= 3;
+  //   //   const height = this.size.y * zoom / 3;
+  //   //   console.log('y', this.name, y - (this.camera.y * this.parallax.y), this.position.y - camera);
+  //   //   return ((y - camera) % height) - height + centering;
+  //   // }
+  //   // console.log('y', this.name, y - (this.camera.y * this.parallax.y), this.position.y - camera);
+  //   // return y - camera + centering;
+  // }
 
   public get isImage(): boolean {
     return this.image != null;
@@ -111,13 +150,19 @@ export class Layer {
 
     layer.render = input.render ?? layer.render;
 
-    layer.repeatX = input.repeatX ?? layer.repeatX; // Needs to be before size below!
-    layer.repeatY = input.repeatY ?? layer.repeatY; // Needs to be before size below!
-    layer.size.x = (input.size?.x ?? layer.viewport.size.x) * (layer.repeatX ? 3 : 1);
-    layer.size.y = (input.size?.y ?? layer.viewport.size.y) * (layer.repeatY ? 3 : 1);
+    layer.repeatX = input.repeatX ?? layer.repeatX; // Needs to be before sizeRepeated below!
+    layer.repeatY = input.repeatY ?? layer.repeatY; // Needs to be before sizeRepeated below!
+    layer.size.x = (input.size?.x ?? layer.viewport.size.x);
+    layer.size.y = (input.size?.y ?? layer.viewport.size.y);
+    layer.sizeRepeated.x = layer.size.x * (layer.repeatX ? 3 : 1);
+    layer.sizeRepeated.y = layer.size.y * (layer.repeatY ? 3 : 1);
 
     layer.position.x = input.position?.x ?? layer.position.x;
     layer.position.y = input.position?.y ?? layer.position.y;
+
+    if (input.parallax != null) {
+      layer.origin = layer.viewport.half.clone();
+    }
 
     layer.zIndex = input.zIndex;
     layer.image = input.image;
@@ -130,6 +175,8 @@ export class Layer {
     layer.parallax.x = 1 - (parallax.x ?? layer.parallax.x);
     layer.parallax.y = 1 - (parallax.y ?? layer.parallax.y);
 
+    layer.before = input.before ?? layer.before;
+
     const contentElement = input.element;
     if (contentElement != null) {
       layer.contentElement = contentElement;
@@ -139,6 +186,10 @@ export class Layer {
     layer.update();
 
     return layer;
+  }
+
+  public destroy(): void {
+    this.viewport.element.removeChild(this.element!);
   }
 
   public update(): void {
@@ -161,27 +212,43 @@ export class Layer {
     const latestCamera = this._latest.camera;
     const cameraX = this.camera.x;
     const cameraY = this.camera.y;
-    if (cameraX !== latestCamera.x || cameraY !== latestCamera.y) {
+    // const zoom = this.camera.zoom;
+    if (cameraX !== latestCamera.x || cameraY !== latestCamera.y /* || zoom !== latestCamera.zoom */) {
       const style = this.element?.style as CSSStyleDeclaration;
       style.left = `${this.x}px`;
       style.top = `${this.y}px`;
       latestCamera.x = cameraX;
       latestCamera.y = cameraY;
+      // if (zoom !== latestCamera.zoom) {
+      //   style.scale = `${zoom}`;
+      //   style.width = `${this.size.x * zoom}px`;
+      //   style.height = `${this.size.y * zoom}px`;
+      //   latestCamera.zoom = zoom;
+      // }
     }
   }
 
   private _createElements() {
     const parent = this.viewport.element;
-    parent.insertAdjacentHTML('beforeend', `
-      <div class="layer ${this.name ?? ''}" ${this.id ? ` id="${this.id}"` : ''} style="
+    const container = parent.ownerDocument.createElement('div');
+    // parent.insertAdjacentHTML('beforeend', `
+    container.innerHTML = `
+      <div class="layer ${this.name ?? ''}" ${this.id ? ` id="${this.id}"` : ''} style = "
         position: absolute;
-        left: ${this.position.x}px;
-        top: ${this.position.y}px;
-        width: ${this.size.x}px;
-        height: ${this.size.y}px;
+        left: ${this.x}px;
+        top: ${this.y}px;
+        width: ${this.sizeRepeated.x}px;
+        height: ${this.sizeRepeated.y}px;
+        /* scale: ${this.camera.zoom}; */
       "></div>
-      `);
-    this.element = parent.lastElementChild as HTMLElement;
+      `;
+    // `);
+    // this.element = parent.lastElementChild as HTMLElement;
+    this.element = container.firstElementChild as HTMLElement;
+
+    const before = this.before instanceof Layer ? this.before.element : this.before;
+    parent.insertBefore(this.element, before ?? null);
+
     if (this.contentElement != null) {
       this.element.insertBefore(this.contentElement, null);
     } else {

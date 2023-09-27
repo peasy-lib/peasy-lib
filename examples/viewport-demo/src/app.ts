@@ -16,6 +16,39 @@ export class App {
   public world: World;
   public effectsLayer: Layer;
 
+  private _backgrounds = {
+    'city': [
+      { name: 'city', image: 'assets/city-background/layer_08_1920 x 1080.png', size: { x: 1920, y: 1080 } },
+      { name: 'city', parallax: 0.97, image: 'assets/city-background/layer_07_1920 x 1080.png', size: { x: 1920, y: 1080 }, position: { x: 960, y: 0 } },
+      { name: 'city', parallax: 0.85, image: 'assets/city-background/layer_06_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
+      { name: 'city', parallax: 0.0, image: 'assets/city-background/layer_05_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
+      { name: 'city', parallax: 0.7, image: 'assets/city-background/layer_04_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
+      { name: 'city', parallax: 0.5, image: 'assets/city-background/layer_03_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
+      { name: 'city', parallax: 0.25, image: 'assets/city-background/layer_02_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
+      { name: 'city', parallax: 0, image: 'assets/city-background/layer_01_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
+    ],
+    'scary': [
+      { name: 'scary', parallax: 0.97, image: 'assets/scary-background/layer_07_1920 x 1080.png', size: { x: 1920, y: 1080 } },
+      { name: 'scary', parallax: 0.97, image: 'assets/scary-background/layer_06_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
+      { name: 'scary', parallax: 0.8, image: 'assets/scary-background/layer_05_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
+      { name: 'scary', parallax: 0.7, image: 'assets/scary-background/layer_04_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
+      { name: 'scary', parallax: 0.5, image: 'assets/scary-background/layer_03_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
+      { name: 'scary', parallax: 0, image: 'assets/scary-background/layer_02_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
+      { name: 'scary', parallax: 0, image: 'assets/scary-background/layer_01_1920 x 1080.png', size: { x: 1920, y: 1080 }, position: { x: 0, y: -270 }, repeatX: true },
+    ]
+  };
+  private _foregrounds = {
+    'city': [
+      { name: 'city', parallax: -0.2, image: 'assets/city-background/layer_02_1920 x 1080.png', size: { x: 1920, y: 1080 }, position: { x: 0, y: 270 }, repeatX: true },
+    ],
+    'scary': [
+      { name: 'scary', parallax: -0.5, image: 'assets/scary-background/layer_01_1920 x 1080.png', size: { x: 1920, y: 1080 }, position: { x: 0, y: -60 }, repeatX: true },
+    ],
+  };
+
+  private level: string;
+  private worldLayer: Layer;
+  private hudLayer: Layer;
 
   public get initialized(): boolean {
     return (this.viewport?.camera) != null;
@@ -34,35 +67,63 @@ export class App {
   }
 
   public start() {
-    this.viewport = Viewport.create({ size: { y: 1080, x: 480 } });
-    this.layers = this.viewport.addLayers([
-      { image: 'assets/city-background/layer_08_1920 x 1080.png', size: { x: 1920, y: 1080 } },
-      { parallax: 0.97, image: 'assets/city-background/layer_07_1920 x 1080.png', size: { x: 1920, y: 1080 } },
-      { parallax: 0.85, image: 'assets/city-background/layer_06_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
-      { parallax: 0.8, image: 'assets/city-background/layer_05_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
-      { parallax: 0.7, image: 'assets/city-background/layer_04_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
-      { parallax: 0.5, image: 'assets/city-background/layer_03_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
-      { parallax: 0.25, image: 'assets/city-background/layer_02_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
-      { parallax: 0, image: 'assets/city-background/layer_01_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
-      { name: 'world', parallax: 0 },
+    this.viewport = Viewport.create({ size: { y: 800, x: 480 } });
+    this.level = 'city';
+    this.viewport.addLayers([
+      // ...this._backgrounds[this.level],
+      // { name: this.level, image: 'assets/city-background/layer_08_1920 x 1080.png', size: { x: 1920, y: 1080 } },
+      // { name: this.level, parallax: 0.97, image: 'assets/city-background/layer_07_1920 x 1080.png', size: { x: 1920, y: 1080 } },
+      // { name: this.level, parallax: 0.85, image: 'assets/city-background/layer_06_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
+      // { name: this.level, parallax: 0.8, image: 'assets/city-background/layer_05_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
+      // { name: this.level, parallax: 0.7, image: 'assets/city-background/layer_04_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
+      // { name: this.level, parallax: 0.5, image: 'assets/city-background/layer_03_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
+      // { name: this.level, parallax: 0.25, image: 'assets/city-background/layer_02_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
+      // { name: this.level, parallax: 0, image: 'assets/city-background/layer_01_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
+      { name: 'world', parallax: 0, size: { x: 0, y: 0 }, position: { x: 0, y: 242 } },
       { name: 'effects', canvasContext: '2d', /* element: document.querySelector('#external') */ },
-      { parallax: -0.2, image: 'assets/city-background/layer_02_1920 x 1080.png', size: { x: 1920, y: 1080 }, position: { x: 0, y: 270 }, repeatX: true },
+      // ...this._foregrounds[this.level],
+      // { parallax: -0.2, image: 'assets/city-background/layer_02_1920 x 1080.png', size: { x: 1920, y: 1080 }, position: { x: 0, y: 270 }, repeatX: true },
       { name: 'HUD', id: 'HUD' },
     ]);
     console.log(this);
 
-    const worldLayer = this.layers.find(layer => layer.name === 'world');
-    console.log(worldLayer, worldLayer.parallax, worldLayer.element);
+    this.worldLayer = this.viewport.getLayer('world');
+    console.log(this.worldLayer, this.worldLayer.parallax, this.worldLayer.element);
 
     this.world = new World();
-    UI.create(worldLayer.element, this.world, World.template)
+    UI.create(this.worldLayer.element, this.world, World.template)
 
-    this.effectsLayer = this.layers.find(layer => layer.name === 'effects');
+    this.effectsLayer = this.viewport.getLayer('effects');
 
-    const hud = this.layers.at(-1);
-    console.log(hud, hud.parallax, hud.element);
+    this.hudLayer = this.viewport.getLayer('HUD');
+    console.log(this.hudLayer, this.hudLayer.parallax, this.hudLayer.element);
 
-    UI.create(hud.element, new HUD(this), HUD.template)
+    UI.create(this.hudLayer.element, new HUD(this), HUD.template)
+
+    this.setLevel('city');
+
+    setTimeout(() => {
+      // this.setLevel('scary');
+    }, 2000);
+
+    let zoomOut;
+    const zoomIn = () => {
+      this.viewport.camera.zoom += .02;
+      if (this.viewport.camera.zoom < 2) {
+        setTimeout(zoomIn, 200);
+      } else {
+        setTimeout(zoomOut, 3000);
+      }
+    }
+    zoomOut = () => {
+      this.viewport.camera.zoom -= .02;
+      if (this.viewport.camera.zoom > 0.5) {
+        setTimeout(zoomOut, 200);
+      } else {
+        setTimeout(zoomIn, 3000);
+      }
+    }
+    setTimeout(zoomIn, 3000);
 
 
     Input.initialize(30); // Repeats per second
@@ -78,12 +139,16 @@ export class App {
         's': 'walk-down',
         'w': 'walk-up',
         ' ': 'jump',
+        '1': { action: 'level-city', repeat: false },
+        '2': { action: 'level-scary', repeat: false },
       },
       (action: string, doing: boolean) => {
         if (doing) {
           this.actions.push(action);
           if (action === 'jump') {
             this.player.jump();
+          } else if (action.startsWith('level-')) {
+            this.setLevel(action.split('-').pop());
           } else {
             this._moveActions(action);
           }
@@ -101,6 +166,27 @@ export class App {
 
     requestAnimationFrame(this.update);
   };
+
+  public async setLevel(name: string) {
+    const fade = this.viewport.addLayers({ name: 'fade', before: this.hudLayer } as any)[0];
+    await this.fadeIn(fade.element, 500);
+
+    this.viewport.removeLayers(this.viewport.getLayers(this.level));
+    this._backgrounds[name].forEach(layer => {
+      (layer as any).before = this.worldLayer;
+      // layer.position = { x: -this.viewport.half.x, y: -this.viewport.half.y };
+    });
+
+    this._foregrounds[name].forEach(layer => (layer as any).before = fade);
+    this.viewport.addLayers([...this._backgrounds[name], ...this._foregrounds[name]]);
+    this.level = name;
+
+    this.player.x = this.player.startX;
+    this.player.y = this.player.startY;
+
+    await this.fadeOut(fade.element, 500);
+    this.viewport.removeLayers(fade);
+  }
 
   private _moveActions(action) {
     let mover;
@@ -134,5 +220,36 @@ export class App {
 
   public move(x: number, y: number): void {
     this.setCamera(this.viewport.camera.x + x, this.viewport.camera.y + y);
+  }
+
+
+  // Function to animate fading in
+  private fadeIn(element, duration) {
+    return element?.animate(
+      [
+        { opacity: 0 },
+        { opacity: 1 }
+      ],
+      {
+        duration: duration,
+        easing: 'ease-in-out',
+        fill: 'forwards'
+      }
+    ).finished;
+  }
+
+  // Function to animate fading out
+  private fadeOut(element, duration) {
+    return element?.animate(
+      [
+        { opacity: 1 },
+        { opacity: 0 }
+      ],
+      {
+        duration: duration,
+        easing: 'ease-in-out',
+        fill: 'forwards'
+      }
+    ).finished;
   }
 }

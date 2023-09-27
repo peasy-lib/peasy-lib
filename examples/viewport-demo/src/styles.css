@@ -1,4 +1,6 @@
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -20,5 +22,14 @@
 }
 
 .HUD {
-  padding-left: 10px;
+  padding: 0px 10px;
+}
+
+.HUD>div {
+  padding: 0px 10px;
+  background-color: #fff5;
+}
+
+.fade {
+  background-color: white;
 }
