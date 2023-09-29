@@ -21,7 +21,7 @@ export class App {
       { name: 'city', image: 'assets/city-background/layer_08_1920 x 1080.png', size: { x: 1920, y: 1080 } },
       { name: 'city', parallax: 0.97, image: 'assets/city-background/layer_07_1920 x 1080.png', size: { x: 1920, y: 1080 }, position: { x: 960, y: 0 } },
       { name: 'city', parallax: 0.85, image: 'assets/city-background/layer_06_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
-      { name: 'city', parallax: 0.0, image: 'assets/city-background/layer_05_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
+      { name: 'city', parallax: 0.8, image: 'assets/city-background/layer_05_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
       { name: 'city', parallax: 0.7, image: 'assets/city-background/layer_04_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
       { name: 'city', parallax: 0.5, image: 'assets/city-background/layer_03_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
       { name: 'city', parallax: 0.25, image: 'assets/city-background/layer_02_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
@@ -50,6 +50,9 @@ export class App {
   private worldLayer: Layer;
   private hudLayer: Layer;
 
+  public zooming = true;
+  public zoomStep = .01;
+
   public get initialized(): boolean {
     return (this.viewport?.camera) != null;
   }
@@ -67,7 +70,7 @@ export class App {
   }
 
   public start() {
-    this.viewport = Viewport.create({ size: { y: 800, x: 480 } });
+    this.viewport = Viewport.create({ size: { y: 800, x: 480 }, origin: { y: 270 } });
     this.level = 'city';
     this.viewport.addLayers([
       // ...this._backgrounds[this.level],
@@ -80,7 +83,7 @@ export class App {
       // { name: this.level, parallax: 0.25, image: 'assets/city-background/layer_02_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
       // { name: this.level, parallax: 0, image: 'assets/city-background/layer_01_1920 x 1080.png', size: { x: 1920, y: 1080 }, repeatX: true },
       { name: 'world', parallax: 0, size: { x: 0, y: 0 }, position: { x: 0, y: 242 } },
-      { name: 'effects', canvasContext: '2d', /* element: document.querySelector('#external') */ },
+      { name: 'effects', canvasContext: '2d', scaling: true, /* element: document.querySelector('#external') */ },
       // ...this._foregrounds[this.level],
       // { parallax: -0.2, image: 'assets/city-background/layer_02_1920 x 1080.png', size: { x: 1920, y: 1080 }, position: { x: 0, y: 270 }, repeatX: true },
       { name: 'HUD', id: 'HUD' },
@@ -110,20 +113,20 @@ export class App {
     const zoomIn = () => {
       this.viewport.camera.zoom += .02;
       if (this.viewport.camera.zoom < 2) {
-        setTimeout(zoomIn, 200);
+        setTimeout(zoomIn, 50);
       } else {
         setTimeout(zoomOut, 3000);
       }
     }
     zoomOut = () => {
       this.viewport.camera.zoom -= .02;
-      if (this.viewport.camera.zoom > 0.5) {
-        setTimeout(zoomOut, 200);
+      if (this.viewport.camera.zoom > 1) {
+        setTimeout(zoomOut, 50);
       } else {
         setTimeout(zoomIn, 3000);
       }
     }
-    setTimeout(zoomIn, 3000);
+    // setTimeout(zoomIn, 3000);
 
 
     Input.initialize(30); // Repeats per second
@@ -164,12 +167,20 @@ export class App {
     this.player?.update(this);
     Gravel.update(this.effectsLayer?.ctx);
 
+    if (this.zooming) {
+      this.viewport.camera.zoom += this.zoomStep;
+      if (this.viewport.camera.zoom >= 2 || this.viewport.camera.zoom <= 0.75) {
+        this.zooming = false;
+        this.zoomStep *= -1;
+        setTimeout(() => this.zooming = true, 3000);
+      }
+    }
     requestAnimationFrame(this.update);
   };
 
   public async setLevel(name: string) {
     const fade = this.viewport.addLayers({ name: 'fade', before: this.hudLayer } as any)[0];
-    await this.fadeIn(fade.element, 500);
+    await this.fadeIn(fade.element, 300);
 
     this.viewport.removeLayers(this.viewport.getLayers(this.level));
     this._backgrounds[name].forEach(layer => {
@@ -184,7 +195,7 @@ export class App {
     this.player.x = this.player.startX;
     this.player.y = this.player.startY;
 
-    await this.fadeOut(fade.element, 500);
+    await this.fadeOut(fade.element, 300);
     this.viewport.removeLayers(fade);
   }
 

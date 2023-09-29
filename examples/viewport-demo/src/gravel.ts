@@ -38,10 +38,18 @@ export class Gravel {
 
   draw(ctx: CanvasRenderingContext2D) {
     const { x, y } = this.app.getCamera();
+    const zoom = this.app.viewport.camera.zoom;
+    const origin = this.app.viewport.origin;
     ctx.beginPath();
     ctx.arc(this.x - x, this.y - y, this.radius, 0, Math.PI * 2);
     ctx.fillStyle = "gray";
     ctx.fill();
     ctx.closePath();
+
+    // ctx.beginPath();
+    // ctx.arc(240, 700, 10, 0, Math.PI * 2);
+    // ctx.fillStyle = "white";
+    // ctx.fill();
+    // ctx.closePath();
   }
 }

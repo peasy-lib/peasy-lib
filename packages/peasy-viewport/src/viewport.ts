@@ -2,8 +2,9 @@ import { Camera, ICamera } from './camera';
 import { ILayer, Layer } from './layer';
 import { IVector, Vector } from './vector';
 
-export interface IViewport extends Omit<Partial<Viewport>, 'size'> {
+export interface IViewport extends Omit<Partial<Viewport>, 'size' | 'origin'> {
   size: IVector;
+  origin?: { x?: number; y?: number };
 }
 
 export class Viewport {
@@ -15,6 +16,7 @@ export class Viewport {
   public half = new Vector();
   public parent!: HTMLElement;
   public element!: HTMLElement;
+  public origin = new Vector();
 
   public get maxX(): number {
     const limited = this.layers.filter(layer => layer.limited);
@@ -39,6 +41,9 @@ export class Viewport {
     viewport.half = viewport.size.multiply(0.5);
     viewport.element = input.element as HTMLElement;
     viewport.parent = (input.parent ?? input.element?.parentElement ?? document.body) as HTMLElement;
+
+    viewport.origin.x = input.origin?.x ?? viewport.origin.x;
+    viewport.origin.y = input.origin?.y ?? viewport.origin.y;
 
     if (viewport.element == null) {
       viewport._createElements();
@@ -94,8 +99,15 @@ export class Viewport {
     if (to != null) {
       converted.add(to.origin, true);
       converted.subtract(to.position, true);
+      // converted.x -= to.x;
+      // converted.y -= to.y;
+      // converted.subtract(to.origin, true);
+      // converted.subtract(to.position, true);
       // converted.subtract(new Vector(to.x, to.y), true);
       // converted.add(new Vector(to.camera.x, to.camera.y), true);
+      // if (to.repeatX) {
+      //   converted.x += to.sizeRepeated.x / 2;
+      // }
     }
     return converted;
   }

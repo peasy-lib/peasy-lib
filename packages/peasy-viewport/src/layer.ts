@@ -17,6 +17,7 @@ export class Layer {
   public sizeRepeated = new Vector();
   public position = new Vector();
   public origin = new Vector();
+  public scaling = false;
 
   public zIndex?: number;
 
@@ -75,22 +76,31 @@ export class Layer {
   // }
 
   public get x(): number {
-    const x = this.position.x - (this.size.x / 2) + this.viewport.half.x;
-    const camera = this.camera.x * this.parallax.x;
-    if (this.repeatX) {
-      const width = this.size.x;
-      return ((x - camera) % width) - width;
-    }
-    return x - camera;
+    return this._pos('x', 1, /*this.camera.zoom, */ true);
+    // const zoom = this.scaling ? this.camera.zoom : 1;
+    // const size = this.size.x;//* zoom;
+    // const position = this.position.x;//* zoom;
+    // const camera = this.camera.x * this.parallax.x;//* zoom;
+    // const x = position - (size / 2) + this.viewport.half.x;
+    // if (this.repeatX) {
+    //   const width = size * zoom;
+    //   console.log('in x', (((x - camera) % width) - width), (((x - camera) % width) - width) * zoom);
+    //   return (((x - camera) % width) - width) //* zoom;
+    // }
+    // return (x - camera) //* zoom;
   }
   public get y(): number {
-    const y = this.position.y - (this.size.y / 2) + this.viewport.half.y;
-    const camera = this.camera.y * this.parallax.y;
-    if (this.repeatY) {
-      const height = this.size.y;
-      return ((y - camera) % height) - height;
-    }
-    return y - camera;
+    return this._pos('y', 1, /*this.camera.zoom, */ true);
+    // const zoom = 1; //this.scaling ? this.camera.zoom : 1;
+    // const size = this.size.y * zoom;
+    // const position = this.position.y * zoom;
+    // const camera = this.camera.y * this.parallax.y * zoom;
+    // const y = position - (size / 2) + this.viewport.half.y;
+    // if (this.repeatY) {
+    //   const height = size;
+    //   return ((y - camera) % height) - height;
+    // }
+    // return y - camera;
   }
   // public get x(): number {
   //   const zoom = this.camera.zoom;
@@ -162,7 +172,9 @@ export class Layer {
 
     if (input.parallax != null) {
       layer.origin = layer.viewport.half.clone();
+      layer.scaling = true;
     }
+    layer.scaling = input.scaling ?? layer.scaling;
 
     layer.zIndex = input.zIndex;
     layer.image = input.image;
@@ -202,28 +214,54 @@ export class Layer {
     }
     if (this.element == null) {
       this._createElements();
-      return;
+      // return;
     }
 
     this._updateProperties();
   }
 
+  private _pos(axis: 'x' | 'y', zoom: number, modulus: boolean): number {
+    zoom = this.scaling ? zoom : 1;
+    const size = this.size[axis];//* zoom;
+    const position = this.position[axis];//* zoom;
+    const camera = this.camera[axis] * this.parallax[axis];//* zoom;
+    const pos = position - (size / 2) + this.viewport.half[axis];
+    const repeat = axis === 'x' ? this.repeatX : this.repeatY;
+    if (repeat) {
+      const sizeZoomed = size //* zoom;
+      // console.log('in x', (((pos - camera) % sizeZoomed) - sizeZoomed), (((pos - camera) % sizeZoomed) - sizeZoomed) * zoom);
+      return modulus
+        ? (((pos - camera) % sizeZoomed) - sizeZoomed) //* zoom;
+        : (((pos - camera)) - sizeZoomed); //* zoom;
+    }
+    return (pos - camera) //* zoom;
+  }
+
   private _updateProperties(): void {
     const latestCamera = this._latest.camera;
-    const cameraX = this.camera.x;
-    const cameraY = this.camera.y;
-    // const zoom = this.camera.zoom;
-    if (cameraX !== latestCamera.x || cameraY !== latestCamera.y /* || zoom !== latestCamera.zoom */) {
+    const camera = this.camera;
+    const cameraX = camera.x;
+    const cameraY = camera.y;
+    const zoom = this.scaling ? camera.zoom : 1;
+    const viewportOrigin = this.viewport.origin;
+
+    if (cameraX !== latestCamera.x || cameraY !== latestCamera.y || zoom !== latestCamera.zoom) {
       const style = this.element?.style as CSSStyleDeclaration;
       style.left = `${this.x}px`;
       style.top = `${this.y}px`;
       latestCamera.x = cameraX;
       latestCamera.y = cameraY;
       // if (zoom !== latestCamera.zoom) {
-      //   style.scale = `${zoom}`;
-      //   style.width = `${this.size.x * zoom}px`;
-      //   style.height = `${this.size.y * zoom}px`;
-      //   latestCamera.zoom = zoom;
+      style.scale = `${zoom}`;
+      style.width = `${this.sizeRepeated.x}px`;
+      style.height = `${this.sizeRepeated.y}px`;
+      // const {x} = this.viewport.translate(new Vector(camera.x, camera.y), null, this);
+      // console.log('in update', this.x, this.x / zoom, this.camera);
+      const x = this.viewport.half.x - this._pos('x', 1, true) + viewportOrigin.x //- (this.size.x); // No zoom for this
+      const y = this.viewport.half.y - this._pos('y', 1, true) + viewportOrigin.y //- (this.size.y); // No zoom for this
+      // const x = this.viewport.half.x - (this.x /*/ zoom*/);
+      style.transformOrigin = `${x}px ${y}px`;
+      latestCamera.zoom = zoom;
       // }
     }
   }
@@ -231,6 +269,7 @@ export class Layer {
   private _createElements() {
     const parent = this.viewport.element;
     const container = parent.ownerDocument.createElement('div');
+    const zoom = this.scaling ? this.camera.zoom : 1;
     // parent.insertAdjacentHTML('beforeend', `
     container.innerHTML = `
       <div class="layer ${this.name ?? ''}" ${this.id ? ` id="${this.id}"` : ''} style = "
@@ -239,7 +278,8 @@ export class Layer {
         top: ${this.y}px;
         width: ${this.sizeRepeated.x}px;
         height: ${this.sizeRepeated.y}px;
-        /* scale: ${this.camera.zoom}; */
+        scale: ${zoom};
+        transform-origin: ${this.x / 2}px;
       "></div>
       `;
     // `);
