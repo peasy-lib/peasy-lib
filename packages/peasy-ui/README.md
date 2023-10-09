@@ -20,11 +20,11 @@ const template = `
     `;
 
 const model = {
-    color: 'red';
-    clicked: () => model.color = 'gold';
+    color: 'red',
+    clicked: () => model.color = 'gold',
 };
 
-const view = UI.create(document.body, template, model);
+const view = UI.create(document.body, model, template);
 ```
 This example creates a two-way bound input field where whatever color is typed in is displayed in a span with that background color. When the button Gold is clicked, the click event binding will update the color property in the model which in turn will update all bindings in the view.
 
@@ -114,7 +114,8 @@ Available attribute bindings are
     'value' ==> prop  From element to model property, used to bind values of
                       radio buttons and select inputs to a model property
 
-    ==> prop    One-time that stores the element in model property
+    ==> (elProp)(:viewProp)   One-time that stores the element and/or the view
+                              in corresponding model property
 
     === prop    Renders the element if model property is not false and not nullish
     !== prop    Renders the element if model property is false or nullish
@@ -123,9 +124,10 @@ Available attribute bindings are
                           for each item in the list. If key is provided
                           property key will be used to decide item equality
 
-    comp === (state)  Renders component (property with type or instance) with
-                      a template and passes state, if component type, to
-                      component's create method
+    comp(:prop) === (state) Renders component (property with type or instance)
+                            with a template and passes state, if component type, to
+                            component's create method. If property is specified,
+                            the created view will be stored in the model property
 
 ### Examples
 
@@ -370,6 +372,90 @@ Since _HTML imports_ aren't here (yet), Peasy UI uses the `UI.import` and `UI.re
 ```
 
 From a templating perspective, there's no difference between JavaScript and HTML single file components and the two types can co-exist and be used in the same app.
+
+### Component life cycle
+
+Sometimes you might want to know when a view or component has been added to or removed from the DOM. The `UIView` that's created by `UI.create()` holds two promises, `attached` and `detached`, that are resolved respectively.
+
+```ts
+const template = `<div>Hello, \${who}!</div>`;
+const model = { who: 'World' };
+const view = UI.create(document.body, model, template);
+await view.attached;
+// Template element is now added to DOM
+```
+When a component is created within a template, the `:property` can be used to get the view of the created component. And if the view property has a setter, life cycle hooks can be easily achieved.
+```ts
+  class Greeting {
+    // Queried by parent to create markup
+    public static template = '<div>Hello, ${name}</div>';
+
+    // Called by parent to create model
+    public static create(state: { name: string }): Greeting {
+      return new Greeting(state.name);
+    }
+
+    public constructor(public name: string) { }
+  }
+
+  class App {
+    public static template = `
+      <div>
+        <\${ Greeting:created === greeting } \${ === greeting }>
+      </div>`;
+
+    public Greeting = Greeting;
+    public greeting = { name: 'World' };
+
+    public set created(view: UIView) {
+      console.log(`View for ${view.model.name} is created.`)
+      view.attached.then(() => console.log(`Element for ${view.model.name} is added.`));
+      view.detached.then(() => console.log(`Element for ${view.model.name} is removed.`));
+    }
+  }
+  const app = new App();
+  UI.create(document.body, app, App.template);
+
+  setTimeout(() => app.greeting = null, 2000);
+  setTimeout(() => app.greeting = { name: 'Everyone' }, 3000);
+```
+If you want the component itself, rather than its parent, to set up the life cycle hooks, that can be achieved with the view property part of the reference binding `==>`.
+```ts
+  class Greeting {
+    // Queried by parent to create markup
+    public static template = '<div pui="==> :created">Hello, ${name}</div>';
+
+    // Called by parent to create model
+    public static create(state: { name: string }): Greeting {
+      return new Greeting(state.name);
+    }
+
+    public constructor(public name: string) { }
+
+    public set created(view: UIView) {
+      console.log(`View for ${this.name} is created.`);
+      view.attached.then(() => this.added());
+      view.detached.then(() => this.removed());
+    }
+    public added() { console.log(`Element for ${this.name} is added.`) }
+    public removed() { console.log(`Element for ${this.name} is removed.`) }
+  }
+
+  class App {
+    public static template = `
+      <div>
+        <\${ Greeting === greet } \${ greet <=* greets }>
+      </div>`;
+
+    public Greeting = Greeting;
+    public greets = [{ name: 'World' }, { name: 'Everyone' }];
+  }
+  const app = new App();
+  UI.create(document.body, app, App.template);
+
+  setTimeout(() => app.greets.pop(), 2000);
+  setTimeout(() => app.greets.push({ name: 'Anyone' }), 3000);
+```
 
 ## Development and contributing
 

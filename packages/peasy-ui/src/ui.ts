@@ -43,8 +43,7 @@ class _UI {
     }
     this.initialized = true;
 
-    this.loadPromise = new Promise(res => this.loadResolve = res);
-    document.defaultView?.addEventListener('load', this.loaded);
+    this.initializeLoadPromise();
 
     if (rafOrInterval === false) {
       return;
@@ -61,10 +60,21 @@ class _UI {
   }
 
   public static import(src: string) {
+    this.initializeLoadPromise();
+    // if (src.startsWith('.')) {
+    //   try {
+    //     const parts = import.meta.url.split('/');
+    //     parts.pop();
+    //     src = `${parts.join('/')}/${src}`;
+    //   } catch (err) {
+    //     console.warn('Failed to add url to', src, err);
+    //   }
+    // }
     document.body.insertAdjacentHTML(`afterbegin`, `<object type="text/pui" data="${src}"></object>`);
   }
 
   public static ready(): Promise<Record<string, any>> {
+    this.initialize();
     return this.loadPromise.then(() => {
       if (this.hoist()) {
         document.head.insertAdjacentHTML('beforeend',
@@ -89,7 +99,7 @@ class _UI {
     // });
   }
 
-  public static create(parent: HTMLElement | string = document.body, model = {}, template: string | HTMLElement | null = null, options: { parent: any; prepare: boolean; sibling: any; host?: Element } = { parent: null, prepare: true, sibling: null }): UIView {
+  public static create(parent: HTMLElement | string | ShadowRoot = document.body, model = {}, template: string | HTMLElement | null = null, options: { parent?: any; prepare?: boolean; sibling?: any; host?: Element } = { parent: null, prepare: true, sibling: null }): UIView {
     // public static create(parent: HTMLElement, template: string | HTMLElement, model = {}, options: { parent: any; prepare: boolean; sibling: any; host?: Element } = { parent: null, prepare: true, sibling: null }): UIView {
     if (typeof parent === 'string') {
       parent = document.querySelector(parent) as HTMLElement;
@@ -109,7 +119,7 @@ class _UI {
       // }
       if (template.startsWith('#')) {
         // template = doc.querySelector(template)!.innerHTML;
-        template = ((doc.querySelector(template) as HTMLTemplateElement));// .content.cloneNode(true) as HTMLElement).firstElementChild as HTMLElement;
+        template = doc.querySelector(template)!.cloneNode(true) as HTMLTemplateElement;// .content.cloneNode(true) as HTMLElement).firstElementChild as HTMLElement;
       } else {
         const container = doc.createElement('template');
         container.innerHTML = options.prepare ? this.prepare(template) : template;
@@ -117,7 +127,7 @@ class _UI {
       }
     }
 
-    const view = UIView.create(parent, model, template, options);
+    const view = UIView.create(parent as HTMLElement, model, template, options);
     if (view.parent === UI) {
       this.views.push(view);
       // console.log('VIEWS', this.views);
@@ -128,9 +138,7 @@ class _UI {
       // this.views.forEach(view => view.updateFromUI());
       // this.update();
     }
-    if (!this.initialized) {
-      this.initialize();
-    }
+    this.initialize();
     return view;
   }
 
@@ -144,6 +152,7 @@ class _UI {
 
   public static queue(func: any): void {
     this._nextQueue.push(func);
+    this.initialize();
   }
 
   public static register(name: string, classForName: any): void;
@@ -254,17 +263,28 @@ class _UI {
             } else if (name === '') {
               if (fromUI === '>') { // ==> reference
                 // type = 'reference';
-                const { target, property } = this.resolveProperty(object, value);
-                target[property] = element;
+                const [elementProperty, viewProperty] = value.split(':');
+                if (elementProperty.length > 0) {
+                  const { target, property } = this.resolveProperty(object, elementProperty);
+                  target[property] = element;
+                }
+                if ((viewProperty ?? '').length > 0) {
+                  UI.queue(() => {
+                    const { target, property } = this.resolveProperty(object, viewProperty);
+                    target[property] = view;
+                  });
+                }
                 return [];
               } else { // === or !== conditional
                 // type = 'conditional';
-                const comment = document.createComment(attr.name);
-                this.parentNode(element, parent).insertBefore(comment, element);
-                this.parentNode(element, parent).removeChild(element);
-                element.removeAttribute(attr.name);
-                template = element;
-                element = comment as unknown as Element;
+                ({ element, template } = this.replaceWithComment(element, view, parent, attr.name));
+                // const comment = document.createComment(attr.name);
+                // this.parentNode(element, parent).insertBefore(comment, element);
+                // this.parentNode(element, parent).removeChild(element);
+                // element.removeAttribute(attr.name);
+                // template = element;
+                // element = comment as unknown as Element;
+                // // view.element = element as HTMLElement;
                 name = (toUI === '=') as unknown as string;
                 toUI = true as unknown as string;
                 if (fromUI === '|') { // ==| or !=| conditional one time
@@ -290,13 +310,17 @@ class _UI {
                 element.setAttribute('pui-unrendered', '');
                 const parentNode = this.parentNode(element, parent);
                 if (parentNode.nodeType !== 8) {
-                  const comment = document.createComment(attr.name);
-                  parentNode.insertBefore(comment, element);
-                  parentNode.removeChild(element);
-                  element.removeAttribute(attr.name);
-                  element = comment as unknown as Element;
+                  ({ element, template } = this.replaceWithComment(element, view, parent, attr.name, template));
+                  // const comment = document.createComment(attr.name);
+                  // parentNode.insertBefore(comment, element);
+                  // parentNode.removeChild(element);
+                  // element.removeAttribute(attr.name);
+                  // element = comment as unknown as Element;
+                  // // view.element = element as HTMLElement;
                 } else {
                   element = parentNode as unknown as Element;
+                  // TODO: Should this also be done?
+                  // view.element = element as HTMLElement;
                 }
               }
               template = name;
@@ -304,12 +328,17 @@ class _UI {
               toUI = true as unknown as string;
             } else if (fromUI === '*') { // *=> event
               // type = 'event';
-              const comment = document.createComment(attr.name);
-              this.parentNode(element, parent).insertBefore(comment, element);
-              this.parentNode(element, parent).removeChild(element);
-              element.removeAttribute(attr.name);
-              template = element;
-              element = comment as unknown as Element;
+              ({ element, template } = this.replaceWithComment(element, view, parent, attr.name));
+              // const comment = document.createComment(attr.name);
+              // this.parentNode(element, parent).insertBefore(comment, element);
+              // this.parentNode(element, parent).removeChild(element);
+              // element.removeAttribute(attr.name);
+              // template = element;
+              // element = comment as unknown as Element;
+              // console.log('element parentNode', element.parentNode, element.parentNode instanceof DocumentFragment);
+              // if (element.parentNode instanceof DocumentFragment) {
+              //   view.element = element as HTMLElement;
+              // }
             } else if (fromUI === '|') { // attr ==| prop one time
               oneTime = true;
             } else if (name !== 'checked') {
@@ -352,7 +381,7 @@ class _UI {
                 // console.log('PARTS', name, parts, this);
                 const index = parts.indexOf(name);
                 if (index > -1) {
-                  parts[index] = _UI.resolveValue(model, name);
+                  parts[index] = UI.resolveValue(model, name);
                   parts[index - 1] += parts[index] + parts[index + 1];
                   parts.splice(index, 2);
                 }
@@ -361,13 +390,13 @@ class _UI {
                 if (index % 2 === 0) {
                   return part;
                 }
-                const match = part.match(_UI.regexSplitConditionalValue);
+                const match = part.match(UI.regexSplitConditionalValue);
                 if (match) {
-                  const value = part === `${name}${fixedValue}` ? newValue : _UI.resolveValue(model, match[1]);
+                  const value = part === `${name}${fixedValue}` ? newValue : UI.resolveValue(model, match[1]);
                   const truthy = match[2] === '=';
                   return !!value === truthy ? match[3].slice(1, -1) : '';
                 }
-                return part === name ? newValue : _UI.resolveValue(model, part);
+                return part === name ? newValue : UI.resolveValue(model, part);
               }).join('');
               element.setAttribute(attr.name, value);
               return value;
@@ -442,7 +471,9 @@ class _UI {
     this.views.forEach(view => {
       view.updateMove();
     });
-    this.destroyed.forEach(view => {
+    // this.destroyed.forEach(view => {
+    for (let i = 0; i < this.destroyed.length; i++) {
+      const view = this.destroyed[i];
       switch (view.destroyed) {
         case 'queue':
           if (view.state === 'rendered') {
@@ -457,10 +488,11 @@ class _UI {
           const index = this.destroyed.findIndex(destroyed => view === destroyed);
           if (index > -1) {
             this.destroyed.splice(index, 1);
+            i--;
           }
         }
       }
-    });
+    };
   }
 
   public static resolveProperty(object: any, property: string): { target: any; property: string } {
@@ -498,6 +530,13 @@ class _UI {
     }
   }
 
+  private static initializeLoadPromise(): void {
+    if (this.loadPromise == null) {
+      this.loadPromise = new Promise(res => this.loadResolve = res);
+      document.defaultView?.addEventListener('load', this.loaded);
+    }
+  }
+
   private static hoist(to = document, doc = document): boolean {
     if (to !== doc) {
       (doc.querySelectorAll('style') ?? []).forEach(style => {
@@ -525,6 +564,20 @@ class _UI {
     // return (type === 'object' || type === 'function') && property in target;
   }
 
+  private static replaceWithComment(element: Element, view: UIView, parent: UIView | UIBinding | null, attr: string, template?: Element) {
+    const comment = document.createComment(attr);
+    this.parentNode(element, parent).insertBefore(comment, element);
+    this.parentNode(element, parent).removeChild(element);
+    element.removeAttribute(attr);
+    template = template ?? element;
+    element = comment as unknown as Element;
+    // console.log('element parentNode', element.parentNode, element.parentNode instanceof DocumentFragment);
+    if (element.parentNode instanceof DocumentFragment) {
+      view.element = element as HTMLElement;
+    }
+    return { element, template };
+  }
+
   public static parentElement(element: Element, parent: UIView | UIBinding | null): HTMLElement {
     const parentElement = element.parentElement;
     if (parentElement != null) {
@@ -544,7 +597,7 @@ class _UI {
     while (parent != null && (parent.element == null || parent.element === element)) {
       parent = parent.parent as UIView | UIBinding;
     }
-    return parent?.element!;
+    return parent?.element as Node;
   }
 
   private static readonly loaded = (): void => {
@@ -598,12 +651,14 @@ class _UI {
           return [];
         } else { // === or !== conditional
           // type = 'conditional';
-          const comment = document.createComment(attrName);
-          this.parentNode(element, parent).insertBefore(comment, element);
-          this.parentNode(element, parent).removeChild(element);
-          element.removeAttribute(attrName);
-          template = element;
-          element = comment as unknown as Element;
+          ({ element, template } = this.replaceWithComment(element, view, parent, attrName));
+          // const comment = document.createComment(attrName);
+          // this.parentNode(element, parent).insertBefore(comment, element);
+          // this.parentNode(element, parent).removeChild(element);
+          // element.removeAttribute(attrName);
+          // template = element;
+          // element = comment as unknown as Element;
+          // // view.element = element as HTMLElement;
           name = (toUI === '=') as unknown as string;
           toUI = true as unknown as string;
           if (fromUI === '|') { // ==| or !=| conditional one time
@@ -613,25 +668,31 @@ class _UI {
       } else if (fromUI === '=' && toUI === '=') { // component === (state)
         const parentNode = this.parentNode(element, parent);
         if (parentNode.nodeType !== 8) {
-          const comment = document.createComment(attrName);
-          parentNode.insertBefore(comment, element);
-          parentNode.removeChild(element);
-          element.removeAttribute(attrName);
-          element = comment as unknown as Element;
+          ({ element, template } = this.replaceWithComment(element, view, parent, attrName, template));
+          // const comment = document.createComment(attrName);
+          // parentNode.insertBefore(comment, element);
+          // parentNode.removeChild(element);
+          // element.removeAttribute(attrName);
+          // element = comment as unknown as Element;
+          // // view.element = element as HTMLElement;
         } else {
           element = parentNode as unknown as Element;
+          // TODO: Should this also be done?
+          // view.element = element as HTMLElement;
         }
         template = name;
         oneTime = true;
         toUI = true as unknown as string;
       } else if (fromUI === '*') { // *=> event
         // type = 'event';
-        const comment = document.createComment(attrName);
-        this.parentNode(element, parent).insertBefore(comment, element);
-        this.parentNode(element, parent).removeChild(element);
-        element.removeAttribute(attrName);
-        template = element;
-        element = comment as unknown as Element;
+        ({ element, template } = this.replaceWithComment(element, view, parent, attrName));
+        // const comment = document.createComment(attrName);
+        // this.parentNode(element, parent).insertBefore(comment, element);
+        // this.parentNode(element, parent).removeChild(element);
+        // element.removeAttribute(attrName);
+        // template = element;
+        // element = comment as unknown as Element;
+        // // view.element = element as HTMLElement;
       } else if (fromUI === '|') { // attr ==| prop one time
         oneTime = true;
       } else if (name !== 'checked') {
@@ -683,7 +744,7 @@ class _UI {
         if (this.webComponentUIView == null) {
           const component = 'create' in this.webComponentComponent ? this.webComponentComponent.create!() : new (this.webComponentComponent as any)();
           component.webComponentHost = this;
-          this.webComponentUIView = UI.create(this.shadowRoot, component, this.webComponentComponent.template, { host: this.shadowRoot?.host }) as UIView;
+          this.webComponentUIView = UI.create(this.shadowRoot!, component, this.webComponentComponent.template, { host: this.shadowRoot?.host }) as UIView;
         }
       }
       private terminate(): void {
@@ -712,13 +773,45 @@ class _UI {
       });
     }
 
+    // // customElements.define might create at once
+    // if (this.loadPromise == null) {
+    //   this.loadPromise = new Promise(res => this.loadResolve = res);
+    //   document.defaultView?.addEventListener('load', this.loaded);
+    // }
     customElements.define(name, WebComponentWrapper);
 
     return WebComponentWrapper;
   }
 }
 
-if (!('UI' in top!)) {
-  (top! as any).UI = _UI;
+function getTopWindow(): Window & { UI: typeof _UI } {
+  let current: Window = window;
+  let top: Window = window;
+
+  while (true) {
+    try {
+      if (current.parent === current) {
+        // we've reached the top window
+        top = current;
+        break;
+      } else {
+        // If cross-domain error, this will generate an error
+        if ((current.parent as any).UI !== 'guarantee-condition-always-true') {
+          // traverse up the window hierarchy
+          current = current.parent;
+        }
+      }
+    } catch (e) {
+      // we hit a cross-domain boundary
+      break;
+    }
+  }
+
+  return top as Window & { UI: typeof _UI };
 }
-export const UI = (top! as any).UI;
+
+const topWindow = getTopWindow();
+if (!('UI' in (topWindow as Window & { UI?: typeof _UI }))) {
+  topWindow.UI = _UI;
+}
+export const UI = topWindow.UI;

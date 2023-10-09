@@ -5,8 +5,10 @@ export class MyComponent {
   `;
 
   public item: number;
-  public constructor(public state: any) { 
+  public name?: string;
+  public constructor(public state: any) {
     this.item = state.item * 10;
+    this.name = state.name;
   }
 
   public get template(): string {

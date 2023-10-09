@@ -6,6 +6,13 @@
   <title>Peasy UI</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <base href="/">
+  <script type="module" src="https://unpkg.com/@microsoft/fast-components"></script>
+  <style>
+    fast-text-field {
+      margin: 10px;
+    }
+
+  </style>
 </head>
 
 <body>
@@ -14,6 +21,11 @@
   <object type="text/html" data="timer.html"></object>
   <div id="ui"></div>
 
+  <!-- <div><span pui="textContent <=> hp">40</span>/<span pui="textContent <== maxHp">150</span></div> -->
+  <div>Hp: <input pui="value <=> hp" value="125"></div>
+  <div>Max hp: <input pui="value <=> maxHp" value="200"></div>
+  <div>${hp}/${maxHp}</div>
+
   <template id="bar">
     <div>
       <div class="bar">
@@ -21,6 +33,15 @@
       </div>
       <div>${hp}/${maxHp}&nbsp;&nbsp; <button pui.="click @=> hpDec">-</button> <button pui.="click @=> hpInc">+</button> </div>
     </div>
+  </template>
+  <template id="list">
+    <div pui="item <=* list">Item: ${item}</div>
+  </template>
+
+  <div id="app"></div>
+  <template id="main">
+    <h1>Hello, ${name}, count is ${app.count}</h1>
+    <button pui="click @=> next">Go to next page ${app.count}</button>
   </template>
 </body>
 

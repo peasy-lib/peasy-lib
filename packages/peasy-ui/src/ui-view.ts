@@ -2,6 +2,13 @@ import { UI } from "./ui";
 import { UIAnimation } from "./ui-animation";
 import { UIBinding } from "./ui-binding";
 
+interface IUIViewOptions {
+  parent?: UIView | UIBinding | null;
+  prepare?: boolean;
+  sibling?: UIView | Element | null;
+  host?: Element;
+}
+
 export class UIView {
   public state: 'created' | 'bound' | 'attaching' | 'attached' | 'rendered' | 'destroyed' = 'created';
   public parent!: typeof UI | UIBinding | UIView;
@@ -10,23 +17,27 @@ export class UIView {
   public host?: Element | null = null; // Web component host
   public bindings: UIBinding[] = [];
   public views: UIView[] = [];
+  public render?: boolean;
   public animations: UIAnimation[] = [];
   public animationQueue: UIAnimation[] = [];
   public destroyed: '' | 'queue' | 'destroy' | 'destroyed' = '';
   public moved: '' | 'queue' | 'move' = '';
 
   public attached!: Promise<void>;
-  private attachResolve!: () => void;
+  public detached!: Promise<void>;
+  private _attachResolve!: () => void;
+  private _detachResolve!: () => void;
   private parentElement!: HTMLElement;
-  private sibling!: HTMLElement | null;
+  private sibling!: UIView | Element | null;
 
-  public static create(parent: HTMLElement, model = {}, template: HTMLElement | null, options: { parent?: any; prepare?: boolean; sibling?: any; host?: Element } = { parent: null, prepare: true, sibling: null }): UIView {
+  public static create(parent: HTMLElement, model = {}, template: HTMLElement | null, options: IUIViewOptions = { parent: null, prepare: true, sibling: null }): UIView {
     const view = new UIView();
 
     view.model = model;
     view.element = template ?? parent;
     view.parent = (options.parent ?? UI);
     view.host = options.host ?? (view.parent as UIView).host;
+    view.sibling = options.sibling ?? null;
     if (template instanceof HTMLTemplateElement || template?.tagName === 'TEMPLATE') {
       const content = (template as HTMLTemplateElement).content.cloneNode(true) as HTMLElement;
       if (content.children.length === 1) {
@@ -40,37 +51,51 @@ export class UIView {
       view.bindings.push(...UI.parse(view.element, model, view, options.parent));
     }
     view.parentElement = template != null ? parent : parent.ownerDocument.documentElement;
-    view.sibling = options.sibling;
 
     // console.log('Not TEMPLATE');
     if (view.views.length > 1) {
       view.attached = Promise.all(view.views.map(v => v.attached)) as unknown as Promise<void>;
+      view.detached = Promise.all(view.views.map(v => v.detached)) as unknown as Promise<void>;
     } else {
       view.attached = new Promise((resolve) => {
-        view.attachResolve = resolve;
+        view._attachResolve = resolve;
+      });
+      view.detached = new Promise((resolve) => {
+        view._detachResolve = resolve;
       });
     }
 
     return view;
   }
 
+  public get lastElement(): Element {
+    if (this.render == null) {
+      this.render = !(this.element.hasAttribute?.('PUI-UNRENDERED') ?? false);
+    }
+    if (this.render) {
+      return this.element;
+    }
+    const views = this.bindings.flatMap(binding => binding.views);
+    const view = views.slice(-1)[0];
+    return view?.lastElement;
+  }
+
   public destroy(): void {
     this.views.forEach(view => view.destroy());
     // console.log('[view] destroy', this.element, this.model, this.element.getAnimations({ subtree: true }));
-    this.element.classList.add('pui-removing');
+    this.element.classList?.add('pui-removing');
     this.destroyed = 'queue';
     UI.destroyed.push(this);
   }
 
   public terminate(): void {
-    // console.log('[view] terminate', this.element, this.model, this.element.getAnimations({ subtree: true }));
-    void Promise.all(
-      this.getAnimations()
-      // this.element.getAnimations({ subtree: true })
-      //   .map(animation => animation.finished)
-    ).then(() => {
+    // console.log('[view] terminate', this.element, this.model, this.getAnimations());
+    void Promise.all(this.getAnimations()).then(() => {
       // console.log('[view] remove', this.element, this.element.getAnimations({ subtree: true }));
-      this.element.parentElement?.removeChild(this.element);
+      const parentElement = this.element.parentElement;
+      parentElement?.removeChild(this.element);
+      this._detachResolve?.();
+      this.dispatchEvent(parentElement, 'removed');
       this.bindings.forEach(binding => binding.unbind());
 
       const index = (this.parent as UIView).views.findIndex((view: UIView) => view === this);
@@ -81,10 +106,10 @@ export class UIView {
     this.destroyed = 'destroyed';
   }
 
-  public move(sibling: HTMLElement): void {
+  public move(sibling: UIView | HTMLElement): void {
     // console.log('[view] move', this.element, this.model, this.model.$model.card?.suit, this.model.$model.card?.value, sibling.innerText);
     this.moved = 'queue';
-    this.element.classList.add('pui-moving');
+    this.element.classList?.add('pui-moving');
     this.sibling = sibling;
   }
 
@@ -105,20 +130,42 @@ export class UIView {
     this.bindings.forEach(binding => binding.updateFromUI());
   }
   public updateToUI(): void {
-    this.views.forEach(view => view.updateToUI());
-    this.bindings.forEach(binding => binding.updateToUI());
-
+    const updateSelfFirst = /* this.element instanceof Comment && */ this.state === 'created';
+    if (!updateSelfFirst) {
+      this.views.forEach(view => view.updateToUI());
+      this.bindings.forEach(binding => binding.updateToUI());
+    }
     // if (this.element.classList.contains('impact')) {
     //   debugger;
     // }
     switch (this.state) {
       case 'created':
         // console.log('[view] add', this.element, this.model);
-        this.element.classList.add('pui-adding');
-        if (!this.element.hasAttribute('PUI-UNRENDERED')) {
-          (this.parentElement ?? UI.parentElement(this.element, this.parent as UIBinding)).insertBefore(this.element, this.sibling?.nextSibling ?? null);
+        this.element.classList?.add('pui-adding');
+        this.render = !(this.element.hasAttribute?.('PUI-UNRENDERED') ?? false);
+        if (this.render) {
+          const parentView = ((this.parent as UIBinding)?.parent as UIView);
+          const renderedParent = parentView?.render ?? false;
+          let sibling = (!renderedParent ? parentView?.sibling : this.sibling) ?? null;
+          sibling = (sibling instanceof UIView ? sibling.lastElement : sibling) ?? null;
+          const parentElement = this.parentElement ?? UI.parentElement(this.element, this.parent as UIBinding);
+          // console.log('parentElement', parentElement, this, sibling, parentView, renderedParent);
+          parentElement.insertBefore(this.element,
+            /* (parentView == null || renderedParent ? */ sibling?.nextSibling /* : sibling) */ ?? null
+          );
+          // if (parentElement instanceof Comment) {
+          //   parentElement = parentElement.parentElement ?? parentElement.parentNode as HTMLElement;
+          // }
+          // parentElement.insertBefore(this.element, this.sibling?.nextSibling ?? null);
+          // } else {
+          // console.log('PUI-UNRENDERED - created', this);
+          // const parentElement = this.parentElement ?? UI.parentElement(this.element, this.parent as UIBinding);
+          // const sibling = this.sibling ?? null;
+          // console.log('parentElement', parentElement, sibling instanceof Comment, this, sibling);
+          // parentElement.insertBefore(this.element, sibling?.nextSibling ?? null);
+          this.dispatchEvent(parentElement, 'added');
         }
-        this.attachResolve();
+        this._attachResolve();
         this.state = 'attaching';
         break;
       case 'attaching':
@@ -127,13 +174,17 @@ export class UIView {
           // this.element.getAnimations({ subtree: false })
           // .filter(animation => animation.playState !== 'finished').length === 0
         ) {
-          this.element.classList.remove('pui-adding');
+          this.element.classList?.remove('pui-adding');
           this.state = 'attached';
         }
         break;
       case 'attached':
         this.state = 'rendered';
         break;
+    }
+    if (updateSelfFirst) {
+      this.views.forEach(view => view.updateToUI());
+      this.bindings.forEach(binding => binding.updateToUI());
     }
   }
   public updateAtEvents(): void {
@@ -177,10 +228,26 @@ export class UIView {
         // ).then(() => {
         // if (this.element.getAnimations({ subtree: true }).length === 0) {
         if (this.getAnimations().length === 0) {
-          const parent = UI.parentElement(this.element, this.parent as UIBinding);
+          const parent = (this.parentElement ?? UI.parentElement(this.element, this.parent as UIBinding)); // UI.parentElement(this.element, this.parent as UIBinding);
           // console.log('[view] moving', this.element.nextSibling === this.sibling.nextSibling, '>', (this.element.nextSibling as any).cloneNode(), '<', (this.sibling.nextSibling as any).innerText)
-          parent.insertBefore(this.element, this.sibling!.nextSibling);
-          this.element.classList.remove('pui-moving');
+          let sibling = (this.sibling instanceof UIView ? this.sibling.lastElement : this.sibling) ?? null;
+          // console.log('parentElement', parentElement, this, sibling, parentView, renderedParent);
+          if (this.render) {
+            parent.insertBefore(this.element, sibling?.nextSibling ?? null);
+          } else {
+            const views = this.bindings.flatMap(binding => binding.views);
+            for (const view of views) {
+              parent.insertBefore(view.element, sibling?.nextSibling ?? null);
+              sibling = view.element;
+            }
+            // for (let i = views.length - 1; i >= 0; i--) {
+            //   const element = views[i].element;
+            //   parent.insertBefore(element, sibling ?? null);
+            //   sibling = element;
+            // }
+          }
+          // parent.insertBefore(this.element, this.sibling!.nextSibling);
+          this.element.classList?.remove('pui-moving');
           this.moved = '';
           this.sibling = null;
         }
@@ -191,8 +258,24 @@ export class UIView {
   }
 
   private getAnimations(subtree = true) {
-    return this.element.getAnimations({ subtree })
+    return (this.element.getAnimations?.({ subtree }) ?? [])
       .filter(animation => animation.playState !== 'finished' && animation.effect?.getTiming().iterations !== Infinity)
       .map(animation => animation.finished);
+  }
+
+  private dispatchEvent(parentElement: HTMLElement | undefined | null, type: 'added' | 'removed'): void {
+    if (parentElement != null) {
+      const detachEvent = new CustomEvent(`pui-${type}`, {
+        detail: {
+          model: this.model.$model ?? this.model,
+          context: this.model,
+          element: this.element,
+          view: this,
+        },
+        bubbles: true,
+        cancelable: true,
+      });
+      parentElement.dispatchEvent(detachEvent);
+    }
   }
 }

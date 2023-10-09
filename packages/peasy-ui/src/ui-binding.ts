@@ -13,11 +13,12 @@ export class UIBinding {
 
   public object: any;
   public property?: string;
-  public arguments!: string[];
+  public propertyArguments!: string[];
 
   public context: any;
   public selector?: string | Element | Node;
   public attribute!: string;
+  public attributeArguments!: string[];
   public value!: string | Element; // A fixed value that's always used
   public template!: HTMLElement;
 
@@ -57,22 +58,39 @@ export class UIBinding {
   public static create(options: IUIBinding): UIBinding {
     const binding = new UIBinding();
 
-    const args = options.property?.split(':') ?? [];
-    const property = args.shift();
+    const propertyArgs = options.property?.split(':') ?? [];
+    const property = propertyArgs.shift();
 
+    const attributeArgs = typeof options.attribute !== 'boolean'
+      ? (options.attribute ?? 'innerText').split(':')
+      : [];
+    const attribute = typeof options.attribute !== 'boolean'
+      ? attributeArgs.shift()!
+      : options.attribute;
+
+    binding.parent = options.parent ?? UI;
     binding.object = '$model' in options.object ? options.object : { $model: options.object };
+    // console.log('object', options.object, '=>', binding.object);
+    if (binding.object.$parent == null) {
+      // console.log('No $parent in UIBinding', binding.object, ((binding.parent as UIView).parent as UIBinding), ((binding.parent as UIView).parent as UIBinding)?.object?.$model);
+      const parentModel = ((binding.parent as UIView).parent as UIBinding)?.object?.$parent;
+      if (parentModel != null) {
+        binding.object.$parent = parentModel;
+        // console.log('Added $parent to UIBinding', binding.object, ((binding.parent as UIView).parent as UIBinding));
+      }
+    }
     binding.property = property;
-    binding.arguments = args;
+    binding.propertyArguments = propertyArgs;
     binding.context = options.context ?? document;
     binding.selector = options.selector;
-    binding.attribute = options.attribute ?? 'innerText';
+    binding.attribute = attribute;
+    binding.attributeArguments = attributeArgs;
     binding.value = options.value ?? binding.value;
     binding.template = options.template ?? binding.template;
     binding.fromUI = options.fromUI ?? binding.fromUI;
     binding.toUI = options.toUI ?? binding.toUI;
     binding.atEvent = options.atEvent ?? binding.atEvent;
     binding.oneTime = options.oneTime ?? binding.oneTime;
-    binding.parent = options.parent ?? UI;
     binding.addListener();
 
     if (typeof binding.fromUI !== 'boolean') {
@@ -139,7 +157,7 @@ export class UIBinding {
         this.lastValue = value;
       }
       // TODO: Verify this outside of web component
-      this.parent.host?.dispatchEvent(new CustomEvent(property, { detail: value }));
+      (this.parent as UIView).host?.dispatchEvent(new CustomEvent(property, { detail: value }));
     }
     this.views.forEach(view => view.updateFromUI());
   }
@@ -174,7 +192,7 @@ export class UIBinding {
           if (value == null) {
             value = [];
           }
-          const key = this.arguments[0];
+          const key = this.propertyArguments[0];
           const lastValue = this.lastValue ?? [];
           if (value.length !== lastValue.length) {
             listChanged = true;
@@ -242,7 +260,7 @@ export class UIBinding {
             // New view
             if (view == null) {
               const model = { $model: { [this.attribute]: item }, $parent: this.object };
-              const view = UIView.create(this.element.parentElement!, model, this.template.cloneNode(true) as HTMLElement, { parent: this, prepare: false, sibling: lastDoneUI?.element ?? this.element });
+              const view = UIView.create(this.element.parentElement!, model, this.template.cloneNode(true) as HTMLElement, { parent: this, prepare: false, sibling: lastDoneUI ?? this.element });
               views.push(view);
               lastDoneUI = view;
               continue;
@@ -254,7 +272,7 @@ export class UIBinding {
             // The same, continue
             if (itemKey === uiItemKey) {
               views.push(view);
-              view.move(lastDoneUI?.element ?? this.element as HTMLElement);
+              view.move(lastDoneUI ?? this.element);
               lastDoneUI = view;
               continue;
             }
@@ -277,7 +295,7 @@ export class UIBinding {
               const uiItemKey = key == null ? uiItem : UI.resolveValue(uiItem ?? {}, key);
               if (itemKey === uiItemKey) {
                 views.push(...this.views.splice(j, 1));
-                view.move(lastDoneUI?.element ?? this.element as HTMLElement);
+                view.move(lastDoneUI ?? this.element);
                 found = true;
                 lastDoneUI = view;
                 break;
@@ -286,7 +304,7 @@ export class UIBinding {
             // New view
             if (!found) {
               const model = { $model: { [this.attribute]: item }, $parent: this.object };
-              const view = UIView.create(this.element.parentElement!, model, this.template.cloneNode(true) as HTMLElement, { parent: this, prepare: false, sibling: lastDoneUI?.element ?? this.element });
+              const view = UIView.create(this.element.parentElement!, model, this.template.cloneNode(true) as HTMLElement, { parent: this, prepare: false, sibling: lastDoneUI ?? this.element });
               views.push(view);
               lastDoneUI = view;
             }
@@ -313,7 +331,11 @@ export class UIBinding {
           this.lastValue = value ?? component;
           const parentElement = this.element.nodeType === 8 ? this.element.parentElement! : this.element;
           const sibling = this.element.nodeType === 8 ? this.element : null;
-          this.lastUIValue = UI.create(parentElement, model, template, { parent: this, prepare: true, sibling });
+          this.lastUIValue = UI.create(parentElement as HTMLElement, model, template, { parent: this, prepare: true, sibling });
+          if (this.attributeArguments[0] != null && value != null) {
+            const { target, property } = UI.resolveProperty(this.object, this.attributeArguments[0]);
+            target[property] = this.lastUIValue;
+          }
           this.views.push(this.lastUIValue);
         }
       }
@@ -342,7 +364,7 @@ export class UIBinding {
       // console.log('UPDATED', this.attribute, event, this.object);
       const callback = UI.resolveValue(this.object, this.property!);
       // TODO: Make callback send parent model for iterator/templates?
-      callback(event, this.object.$model, this.element, this.attribute, this.object);
+      callback.call(this.object.$model, event, this.object.$model, this.element, this.attribute, this.object);
       event = this.events.shift();
     }
     this.views.forEach(view => view.updateAtEvents());
@@ -359,7 +381,7 @@ export class UIBinding {
     } else {
       const callback = UI.resolveValue(this.object, this.property!);
       // TODO: Make callback send parent model for iterator/templates?
-      callback(event, this.object.$model, this.element, this.attribute, this.object);
+      callback.call(this.object.$model, event, this.object.$model, this.element, this.attribute, this.object);
     }
   };
 

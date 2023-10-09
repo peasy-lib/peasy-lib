@@ -6,7 +6,8 @@
     "declarationMap": false,
     "rootDir": "src",
     "lib": ["esnext", "dom", "DOM.Iterable"],
-    "strict": true
+    "strict": true,
+    "esModuleInterop": false
   },
   "include": [
     "src"

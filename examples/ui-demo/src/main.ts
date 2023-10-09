@@ -1,4 +1,4 @@
-import { UI } from '@peasy-lib/peasy-ui';
+import { UI, UIView } from '@peasy-lib/peasy-ui';
 import 'styles.css';
 // import 'styles5.css';
 import { MyComponent } from './my-component';
@@ -7,12 +7,14 @@ import { MyComponent } from './my-component';
 
 // console.log('Template', Template, Template.default);
 
+import "./web-component-wrapper";
+
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
 window.addEventListener('DOMContentLoaded', (event) => {
-  main();
+  main16();
 });
 
 function main3() {
@@ -47,7 +49,7 @@ function main3() {
       }
     },
   };
-  UI.create(document.body, template, model);
+  UI.create(document.body, model, template);
 
   document.addEventListener('mousemove', model.mouseMove);
   document.addEventListener('mouseup', model.mouseUp);
@@ -197,7 +199,7 @@ async function main5(): Promise<void> {
     };
   }
 
-  UI.create(document.body, template, new App());
+  UI.create(document.body, new App(), template);
 }
 
 async function main6(): Promise<void> {
@@ -233,7 +235,318 @@ async function main6(): Promise<void> {
     }
   }
 
-  UI.create(document.body, template, new App());
+  UI.create(document.body, new App(), template);
+}
+
+async function main7(): Promise<void> {
+  const regex = /^\{(?:[^{}]|(\1))*\}$/g;
+  const str = '{ hello, { world }, { foo: { bar: baz } } }';
+  if (regex.test(str)) {
+    console.log('Match found!');
+  } else {
+    console.log('No match found');
+  }
+
+
+  const template = `
+        <div>Count: \${( this.count % 2 ? 'odd' : 'even' ) } (\${count})</div>
+    `;
+
+  class App {
+    count = 1;
+  }
+
+  const app = new App();
+  UI.create(document.body, app, template);
+  setInterval(() => app.count++, 1000);
+}
+
+async function main8(): Promise<void> {
+  // <my-webcomponent pui="text <== text; value <=> value; value-updated @=> valueUpdated"></my-webcomponent>
+  const template = `
+        <h3>Web Component test</h3>
+        <my-webcomponent pui="value <=> value:value-updated; value-updated @=> valueUpdated"></my-webcomponent>
+        <div>App: \${count}, \${value}, \${valueFast}</div>
+        <fast-text-field pui="value <=> valueFast"></fast-text-field>
+    `;
+
+  class App {
+    count = 1;
+    element;
+    value = 'initial';
+    valueFast = 'FAST initial';
+    get text() {
+      return 'Counting up ' + app.count;
+    }
+
+    valueUpdated = (ev) => {
+      console.log('Value updated', ev.detail);
+    }
+    valueFastUpdated = (ev) => {
+      console.log('FAST value updated', ev.detail);
+    }
+  }
+
+  const app = new App();
+  UI.create(document.body, app, template);
+  setInterval(() => {
+    // app.count++;
+    // app.element.setAttribute('text', 'Counting up ' + app.count);
+    // app.value = 'blarg'
+  }, 1000);
+}
+
+async function main9(): Promise<void> {
+  const model = {} as { hp: number; };
+  UI.create(document.body, model);
+  setInterval(() => model.hp--, 500);
+}
+
+async function main10(): Promise<void> {
+  const template = `
+        <h3>Web Component test</h3>
+        <div>App: \${count}, \${value}</div>
+    `;
+
+  class App {
+    count = 1;
+    value = 'initial';
+  }
+
+  const app = new App();
+  console.log('before create');
+  const view = UI.create(document.body, app, template);
+  await view.attached;
+  console.log('after create', view);
+}
+
+async function main11(): Promise<void> {
+  class HelloModel {
+    public template = "<p>Hello ${name}!</p>";
+    constructor(public name: string) { }
+  }
+
+  const template = `
+        <div>
+          <h3>No wrapper test</h3>
+          < \${ item === } \${ item <=* items } />
+        </div>
+    `;
+
+  class App {
+    public items = [
+      new HelloModel("John"),
+      new HelloModel("Amy"),
+      new HelloModel("Anthony"),
+    ];
+  }
+
+  const app = new App();
+  const view = UI.create(document.body, app, template);
+}
+
+async function main12(): Promise<void> {
+  const template = `
+    <div pui="item <=* list">Item: \${item}</div>
+  `;
+
+  class App {
+    public list = ['one', 'two', 'three'];
+  }
+
+  const app = new App();
+  UI.create(document.body, app, template);
+}
+
+async function main13(): Promise<void> {
+  class Item {
+    template = `<div>Name: \${name} (\${toggled}) <button \${ click @=> toggle }>Toggle</button> <button \${ click @=> $parent.delete }>Delete</button></div>`;
+    constructor(public name: string, public toggled = false) { }
+    toggle = () => this.toggled = !this.toggled;
+  }
+
+  class App {
+    static template = `
+    <div>
+      <div><input \${ value <=> value }> <button \${ click @=> add }>Add</button></div>
+      < \${ item === } \${ item <=* list} />
+    </div>
+    `;
+    value = '';
+    list = [];
+    add = () => {
+      this.list.push(new Item(this.value));
+      this.value = '';
+    };
+    delete = (_e, model) => this.list = this.list.filter(item => item !== model);
+  }
+  UI.create(document.body, new App(), App.template);
+
+  // const template = `<\${ click @=> clicked_item } \${ list === }/>`
+  // const list = { list: (() => {
+  //   const arr = new Array();
+  //   (arr as any).template = `<div class="card" \${ item <=* listing }>Item: \${ item }</div>`;
+  //   // Get a pointer back to itself
+  //   Object.defineProperty(arr, "listing", { get() { return this } });
+  //   (arr as any).clicked_item = () => console.log('clicked item');
+  //   for (let i = 0; i < 10; i++) arr.push(i + 1);
+  //   return arr;
+  // })()};
+  // UI.create(document.body, list, template);
+}
+
+async function main14(): Promise<void> {
+  class Item {
+    template = `
+    <div>
+      Name: \${name} (\${toggled}) <!-- Rendered component state -->
+      <button \${ click @=> toggle }>Toggle</button> <!-- Updates component state -->
+      <button \${ click @=> delete }>Delete</button> <!-- Updates state above/outside component -->
+    </div>`;
+    constructor(public name: string, public toggled = false) { }
+    toggle = () => this.toggled = !this.toggled;
+    delete = (_e, _m, el) => el.dispatchEvent(new CustomEvent('delete-item', { detail: this, bubbles: true, composed: true }));
+  }
+
+  class App {
+    static template = `
+    <div \${ delete-item @=> delete }>
+      <div><input \${ value <=> value }> <button \${ click @=> add }>Add</button> <button \${ click @=> reverse }>Reverse</button></div>
+      <div>< \${ item === } \${ item <=* list} /></div>
+      <div><div \${ item <=* list} >\${item.name}</div></div>
+      </div>
+      `;
+    value = '';
+    list = [];
+    add = () => {
+      this.list.push(new Item(this.value));
+      this.value = '';
+    };
+    reverse = () => {
+      const reversed = this.list;
+      reversed.reverse();
+      this.list = reversed;
+    };
+    delete = (e) => this.list = this.list.filter(item => item !== e.detail);
+  }
+  UI.create(document.body, new App(), App.template);
+}
+
+async function main15(): Promise<void> {
+  class App {
+    name = null;
+    view = null;
+    count = 0;
+    working = false;
+
+    constructor(name) {
+      this.name = name;
+
+      UI.initialize(2);
+    }
+
+    route = async (className) => {
+      const instance = new className({
+        app: this,
+        name: this.name,
+      });
+      await this.#router(instance);
+    };
+
+    async #router(instance) {
+      console.log(
+        `Routing to [${instance.constructor.name}] [${instance.template}]`
+      );
+      if (this.view) {
+        this.view.destroy();
+        await this.view.detached;
+      }
+
+      this.view = UI.create(
+        document.querySelector("#app") as HTMLElement,
+        instance,
+        instance.template
+      );
+      await this.view.attached;
+      this.working = false;
+    }
+  }
+
+  class Main {
+    template = "#main";
+    app;
+    name;
+    working;
+
+    constructor(params) {
+      this.app = params.app;
+      this.name = params.name;
+    }
+
+    next = (e) => {
+      if (this.working) {
+        return;
+      }
+      this.working = true;
+      this.app.count++;
+      this.app.route(Main);
+    };
+  }
+
+  const app = new App("Ace");
+  app.route(Main);
+}
+
+async function main16(): Promise<void> {
+  class Greeting {
+    // Queried by parent to create markup
+    public static template = '<div pui="==> :created">Hello, ${name}</div>';
+
+    // Called by parent to create model
+    public static create(state: { name: string }): Greeting {
+      return new Greeting(state.name);
+    }
+
+    public constructor(public name: string) { }
+
+    public set created(view: UIView) {
+      console.log('created (in Greeting)', view);
+      this.onCreated();
+      view.attached.then(() => this.onMounted());
+      view.detached.then(() => this.onUnmounted());
+    }
+
+    public onCreated() { console.log(`View for ${this.name} is created.`) }
+    public onMounted() { console.log(`Element for ${this.name} is added.`) }
+    public onUnmounted() { console.log(`Element for ${this.name} is removed.`) }
+  }
+
+  class App {
+    public static template = `
+      <div>
+        <\${ Greeting:created === greeting } \${ === greeting }>
+        <\${ Greeting === greet } \${ greet <=* greets }>
+      </div>`;
+
+    public Greeting = Greeting;
+    public greeting = { name: 'World' };
+    public greets = [{ name: 'World' }, { name: 'Everyone' }];
+    public greets0 = Greeting.create(this.greets[0]);
+
+    public set created(view: UIView) {
+      console.log(`[App] View for ${view.model.name} is created.`)
+      view.attached.then(() => console.log(`[App] Element for ${view.model.name} is added.`));
+      view.detached.then(() => console.log(`[App] Element for ${view.model.name} is removed.`));
+    }
+  }
+  const app = new App();
+  UI.create(document.body, app, App.template);
+
+  setTimeout(() => app.greeting = null, 3000);
+  setTimeout(() => app.greeting = { name: 'Anyone' }, 4000);
+
+  // setTimeout(() => app.greets.pop(), 3000);
+  // setTimeout(() => app.greets.push({ name: 'Anyone' }), 4000);
 }
 
 
@@ -249,7 +562,7 @@ async function main(): Promise<void> {
   model = {
     darkMode: false,
     MyComponent,
-    models: [{ item: 1 }, { item: 3 }],
+    models: [{ item: 1 }, { item: 3, name: 'item1' }],
     components: [MyComponent.create({ item: 1 }), MyComponent.create({ item: 3 })],
     showComponents: true,
     players: [
@@ -342,17 +655,34 @@ async function main(): Promise<void> {
     slashX: 250,
     doSlash: false,
     animations: [],
-    impact() { for (let i = 0; i < 5; i++) model.animations.push({ name: 'impact', x: random(-300, 200), y: random(-100, 200), text: 'HELLO, WORLD!' }); }
+    impact() { for (let i = 0; i < 5; i++) model.animations.push({ name: 'impact', x: random(-300, 200), y: random(-100, 200), text: 'HELLO, WORLD!' }); },
+    puiRemoved(event) { console.log('puiRemoved', event) },
+    puiAdded(event) {
+      console.log('puiAdded', event);
+      if (event.detail.model.name === model.models[1].name) {
+        console.log('ADDED models[1]!');
+      }
+    },
+    set componentView0(view) {
+      view.attached.then(() => model.onMount(view));
+      view.detached.then(() => model.onUnmount(view));
+    },
+    onMount(view) {
+      console.log('mounted', view.element, view.model);
+    },
+    onUnmount(view) {
+      console.log('unmounted', view.element, view.model);
+    },
   };
 
   //       <div \${ ==> stateChanged ==> animationRun }>Stage changed test</div>
 
-  UI.create(document.body, `
-    <div class="main" style="background-color: \${|color}; transition-duration: \${|transitionDuration}ms;">
+  const view = UI.create(document.body, `
+    <div class="main" style="background-color: \${|color}; transition-duration: \${|transitionDuration}ms;" \${ pui-removed @=> puiRemoved } \${ pui-added @=> puiAdded }>
       <div class="slash" \${ === doSlash}></div>
       <div \${ animation <=* animations } class="\${animation.name}" style="left: \${animation.x}px; top: \${animation.y}px;">\${animation.text}</div>
       <button \${click @=> impact}>Impact</button>
-      <div class="player" \${player <=* players}>
+      <div class="player" \${ ==> $parent.playerElement } \${player <=* players}>
         <div>Name: \${player.name} - colors: <span \${playerColor <=* player.colors}> (\${player.name}) \${playerColor.c} </span></div>
       </div>
       <hr>
@@ -363,10 +693,10 @@ async function main(): Promise<void> {
       <div style="height: 2px"></div>
       <div><label>Show components: <input type="checkbox" \${ checked <=> showComponents }></label></div>
       <div>Global state: \${models[0].item}, \${models[1].item}</div>
-      <\${ components[0] === } \${ === showComponents }>
-      <\${ MyComponent === models[1] } \${ === showComponents }>
-      <\${ MyComponent === state } \${state <=* models}>
-      <\${ component === } \${component <=* components}>
+      <\${ components[0]:componentView0 === } \${ === showComponents }>
+      <\${ MyComponent:componentView1 === models[1] } \${ === showComponents }>
+      <\${ MyComponent:state.componentViewState === state } \${state <=* models}>
+      <\${ component:component.componentViewComponent === } \${component <=* components}>
       <div \${item <=* list} class="item" style="background-color: \${color};">Item: \${item} <button \${click @=> clicked}>Set to gold (\${item})</button></div>
       List: \${list[1]}
       <div><input \${value<=>myIndex} name="source" type="number" min="1" max="4">: \${myIndex}</div>
@@ -401,6 +731,12 @@ async function main(): Promise<void> {
 
   console.log('model', model);
 
+  view.attached.then(() => {
+    model.components.forEach(component => {
+      component.componentViewComponent.attached.then(() => console.log('componentViewComponent attached', component.item));
+      component.componentViewComponent.detached.then(() => console.log('componentViewComponent detached', component.item));
+    });
+  });
   //   const slots = 5;
   //   let templateSlots = `
   //    <div class="slots">
