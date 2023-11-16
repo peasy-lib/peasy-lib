@@ -255,6 +255,7 @@ export class UIView {
         break;
     }
     this.bindings.forEach(binding => binding.updateMove());
+    this.views.forEach(view => view.updateMove());
   }
 
   private getAnimations(subtree = true) {

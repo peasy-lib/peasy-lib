@@ -192,6 +192,7 @@ export class UIBinding {
           if (value == null) {
             value = [];
           }
+          // value = value != null ? [...value] : []; // Create a copy for race conditions
           const key = this.propertyArguments[0];
           const lastValue = this.lastValue ?? [];
           if (value.length !== lastValue.length) {
