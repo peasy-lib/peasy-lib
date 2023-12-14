@@ -1,0 +1,49 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: skyblue;
+}
+
+.instruction {
+  margin-left: 50px;
+}
+
+.viewport {
+  border: 1px solid black;
+  position: relative;
+  margin: 50px;
+}
+
+.world {
+  position: relative;
+  background-color: green;
+}
+
+.entity {
+  position: absolute;
+  opacity: 0.7;
+}
+
+.entity .body {
+  position: relative;
+  border-radius: 50%;
+  border: 1px solid black;
+  font-size: 11px;
+  text-align: center;
+}
+
+.entity .activity {
+  position: relative;
+  width: 100px;
+  top: -50px;
+  left: -50px;
+  font-size: 13px;
+  text-align: center;
+}

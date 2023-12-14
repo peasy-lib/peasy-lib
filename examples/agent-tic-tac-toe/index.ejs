@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Tic-Tac-Toe</title>
+
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+    }
+
+    .board {
+      width: 300px;
+      height: 300px;
+      border: 1px solid black;
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .status,
+    a {
+      margin: 20px;
+      font-size: 25px;
+    }
+
+    .board>div {
+      width: 100px;
+      height: 100px;
+      border: 1px solid black;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .board>div:has(:is(.circle, .cross, .unallowed)) {
+      pointer-events: auto;
+      cursor: not-allowed;
+    }
+
+    .circle {
+      height: 80px;
+      width: 80px;
+      box-sizing: border-box;
+      border: 5px solid blue;
+      border-radius: 50%;
+    }
+
+    .cross {
+      height: 80px;
+      width: 80px;
+      box-sizing: border-box;
+      border: 5px solid green;
+    }
+
+    .hide {
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="board">
+    <div onclick="play(event)"><div></div></div>
+    <div onclick="play(event)"><div></div></div>
+    <div onclick="play(event)"><div></div></div>
+
+    <div onclick="play(event)"><div></div></div>
+    <div onclick="play(event)"><div class="unallowed"></div></div>
+    <div onclick="play(event)"><div></div></div>
+
+    <div onclick="play(event)"><div></div></div>
+    <div onclick="play(event)"><div></div></div>
+    <div onclick="play(event)"><div></div></div>
+  </div>
+  <div class="status">New game, circle starts.</div>
+  <a class="hide" href="#" onclick="restart()">Play again</a>
+
+  <!-- <script src="./tic-tac-toe-world.js"></script> -->
+<!--
+  <script type="module">
+//    import { TESTING } from './main.js';
+//    console.log('TESTING', TESTING);
+    import { TicTacToeWorld } from './tic-tac-toe-world.js';
+    console.log('In index.ejs', TicTacToeWorld);
+    /*
+    import { TicTacToeAgent } from './tic-tac-toe-agent.js';
+    import { AgentPlay } from './agent-play.js';
+    import { Win } from './win.js';
+
+    const agent = TicTacToeAgent.create({
+      id: 'cross',
+      actions: [AgentPlay],
+      goals: [new Win(1)],
+    });
+*/
+    let player = 'circle';
+    let ended = false;
+    const wins = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8],
+      [0, 3, 6], [1, 4, 7], [2, 5, 8],
+      [0, 4, 8], [2, 4, 6],
+    ];
+    const slots = [...document.querySelectorAll('.board > div > div')];
+    const status = document.querySelector('.status');
+    const again = document.querySelector('a');
+
+    function turn() {
+      return slots.map(s => s.classList.value).filter(v => v.replace('unallowed', '')).length;
+    }
+
+    window.play = (e) => {
+      // function play(e) {
+      if (ended) return;
+
+      let target = e.target;
+      while (target.firstChild) target = target.firstChild;
+
+      // if (turn() === 0 && target === slots[4]) return;
+      if (target.classList.contains('unallowed')) return;
+      slots[4].classList.remove('unallowed');
+
+      if (target.classList.value !== '') return;
+
+      target.classList.add(player);
+
+      for (const check of wins) {
+        if (check.every(i => slots[i].classList.value === player)) {
+          status.textContent = player + " won!";
+          again.classList.remove('hide');
+          slots.forEach(s => s.classList.add('unallowed'));
+          ended = true;
+          return;
+        }
+      }
+      if (turn() === 9) {
+        status.textContent = "It's a draw!";
+        again.classList.remove('hide');
+        ended = true;
+        return;
+      }
+
+      player = player === 'circle' ? 'cross' : 'circle';
+      status.textContent = player + "'s turn.";
+
+      if (player === 'cross') {
+        /*
+        console.log("AI's turn", agent);
+        const world = TicTacToeWorld.create(slots);
+        world.nodeCounts = {};
+        world.performances = {};
+
+        const agentActions = TicTacToeAgent.getPreferredActions(world);
+        for (const agentAction of agentActions) {
+          const { agent, action } = agentAction;
+          const { x } = action.context.target;
+          document.querySelectorAll('.board > div')[x].click();
+          /*
+          console.log('==> Action for agent', agent.external.type, agent.id, action.name, action.context.target);
+          let success = false;
+          switch (action.name) {
+            case 'move-to':
+            case 'wander':
+              success = action.external.execute({ entity: agent.external, position: action.context.target });
+              break;
+            default:
+              success = action.external.execute({ entity: agent.external, target: action.context.target });
+              break;
+          }
+          if (success) {
+            agent.setCurrentAction(agentAction);
+          }
+          *
+        }
+        */
+      }
+    }
+
+    window.restart = () => {
+      // function restart() {
+      slots.forEach(s => s.classList.value = '');
+      player = 'circle';
+      status.textContent = "New game, " + player + " starts."
+      again.classList.add('hide');
+      slots[4].classList.add('unallowed');
+      ended = false;
+    }
+  </script>
+-->
+</body>
+
+</html>
