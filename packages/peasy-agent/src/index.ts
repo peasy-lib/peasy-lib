@@ -1,6 +1,6 @@
-export { PlannerNode } from './planner-node';
+export { SelectorNode } from './selector-node';
 
-export { Planner } from './planner';
+export { Selector } from './selector';
 
 export { World } from './world';
 
@@ -11,6 +11,8 @@ export { Action } from './action';
 export { Agent } from './agent';
 
 export { Curves } from './curves';
+
+export type { IAction } from './action';
 
 export type { IAgent } from './agent';
 

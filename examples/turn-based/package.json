@@ -1,7 +1,7 @@
 {
-  "name": "@examples/agent-tic-tac-toe",
+  "name": "@examples/turn-based",
   "private": true,
-  "description": "An AI Tic-Tac-Toe demo built with peasy-lib.",
+  "description": "A turn based combat demo built with peasy-lib.",
   "version": "1.0.0",
   "scripts": {
     "start": "webpack serve",
@@ -14,9 +14,7 @@
     "@peasy-lib/peasy-engine": "0.3.0",
     "@peasy-lib/peasy-input": "0.2.0",
     "@peasy-lib/peasy-ui": "0.9.58",
-    "@peasy-lib/peasy-viewport": "0.1.3",
-    "@peasy-lib/peasy-states": "0.1.4",
-    "@peasy-lib/peasy-agent": "0.2.0"
+    "@peasy-lib/peasy-path": "0.1.0"
   },
   "devDependencies": {
     "@types/node": "^17.0.23",

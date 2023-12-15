@@ -6,8 +6,8 @@ export class World {
   public update(): void { }
 
   // Override and create a world with a state based on game world
-  public static create(input: IWorld, type?: typeof World): World {
-    const world = new (type ?? World)();
+  public static create(input: IWorld): World {
+    const world = new this();
     return world;
   }
 
@@ -35,8 +35,9 @@ export class World {
   //     : null;
   // }
 
-  public clone(type = World): World {
-    const world = new type();
+  public clone(): World {
+    console.log('cloning world')
+    const world = new (this.constructor as any)() as World;
     // world.state = structuredClone(this.state);
     world.state = JSON.parse(JSON.stringify(this.state));
     return world;

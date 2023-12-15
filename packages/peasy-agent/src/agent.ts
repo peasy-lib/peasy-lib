@@ -1,9 +1,10 @@
 import { Action } from './action';
 import { Entity } from './entity';
 import { Goal } from './goal';
-import { Planner } from './planner';
+import { Selector } from './selector';
+import { World } from './world';
 
-export interface IPreferredAction {
+export interface ISelectedAction {
   agent: Agent;
   action: Action;
 }
@@ -12,9 +13,11 @@ export interface IAgent {
   id: number | string;
   actions: (typeof Action)[];
   goals?: Goal[];
-  type?: typeof Agent;
-  planner?: typeof Planner;
+  selector?: typeof Selector;
   external?: any;
+  active?: boolean;
+  team?: string;
+  selectorDepth?: number;
 }
 
 export class Agent {
@@ -24,17 +27,7 @@ export class Agent {
   public actions: (typeof Action)[] = [];
   public goals: Goal[] = [];
 
-  public planner: typeof Planner = Planner;
-
-  public state = {};
-  // public maxHp = 100;
-  // public hp = this.maxHp;
-
-  // public crossbow?: { loaded: boolean } = { loaded: false };
-  // public bolts = 0;
-  // public potions = 3;
-
-  // public evading = false;
+  public selector!: Selector;
 
   public currentAction: Action | null = null;
   public previousAction: Action | null = null;
@@ -43,6 +36,9 @@ export class Agent {
 
   public startTime: number = -Infinity;
 
+  public active = true;
+  public team!: string;
+
   public constructor(public id: number | string, actions: (typeof Action)[]) {
     this.actions = [...actions];
   }
@@ -50,7 +46,7 @@ export class Agent {
   public getCurrentAction(): Action | null {
     return this.currentAction;
   }
-  public setCurrentAction(value: IPreferredAction | null) {
+  public setCurrentAction(value: ISelectedAction | null) {
     this.previousAction = this.currentAction;
     this.currentAction = value?.action ?? null;
     this.startTime = this.currentAction != null ? performance.now() : -Infinity;
@@ -71,27 +67,33 @@ export class Agent {
   }
 
   public static create(input: IAgent): Agent {
-    const agent = new (input.type ?? Agent)(input.id, input.actions);
+    const agent = new this(input.id, input.actions);
 
     agent.external = input.external;
     agent.goals = [...(input.goals ?? agent.goals)];
-    agent.planner = input.planner ?? agent.planner;
+    agent.selector = (input.selector ?? Selector).create({ agent });
+    agent.active = input.active ?? agent.active;
+    agent.team = input.team ?? `${input.id}`;
+
+    agent.selector.maxLevel = input.selectorDepth ?? agent.selector.maxLevel;
 
     Agent.agents.push(agent);
     return agent;
   }
-  // public get name(): string {
-  //   return `<span style="color: ${this.color}">${this.color}</span>`;
-  // }
 
-  public static getPreferredActions(world: any): IPreferredAction[] {
+  public destroy(): void {
+    const index = Agent.agents.indexOf(this);
+    Agent.agents.splice(index, 1);
+  }
+
+  public static getSelectedActions(world: World): ISelectedAction[] {
     const actions = [];
 
     for (const agent of this.agents) {
-      if (agent.isLocked) {
+      if (!agent.active || agent.isLocked) {
         continue;
       }
-      const action = agent.getPreferredAction(world);
+      const action = agent.getSelectedAction(world);
       if (action == null) {
         continue;
       }
@@ -106,10 +108,9 @@ export class Agent {
     return actions;
   }
 
-  public getPreferredAction(world: any) {
-    const planner = Planner.create({ world, agent: this });
-    // return planner.getAvailableActions(planner.world, this);
-    const action = planner.chooseAction(world);
+  // Keep this for convenient overloading of Agent
+  public getSelectedAction(world: World) {
+    const action = this.selector.selectAction(world);
     return action;
   }
 }

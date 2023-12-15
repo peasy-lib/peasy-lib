@@ -1,0 +1,229 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+div.radio-button {
+  display: inline-block;
+  position: relative;
+}
+
+div.radio-button input[type="radio"] {
+  display: none;
+}
+
+div.radio-button label {
+  display: inline-block;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  border: 2px solid #3498db;
+  border-radius: 5px;
+  background-color: #3498db;
+  color: #fff;
+  transition: background-color 0.3s;
+}
+
+div.radio-button input[type="radio"]:checked+label {
+  background-color: #2980b9;
+}
+
+.game {
+  display: inline-block;
+  margin: 50px;
+}
+
+#viewport {
+  position: relative;
+  width: 768px;
+  height: 384px;
+  box-sizing: content-box;
+  border: 1px solid black;
+}
+
+.action-bar {
+  margin-top: 10px;
+  text-align: right;
+}
+.actions {
+  float: right;
+}
+.combatants {
+  position: relative;
+  float: left;
+}
+.combatants .combatant {
+  display: inline-block;
+  position: absolute;
+  width: 100px;
+  padding: 10px 20px;
+  font-size: 16px;
+  text-align: left;
+  border: 2px solid lightgray;
+  border-radius: 5px;
+  background-color: lightgray;
+  margin-right: 5px;
+  white-space: nowrap;
+  transition-duration: 500ms;
+  transition-property: left;
+}
+.combatants .combatant:first-child {
+  border: 2px solid gold;
+}
+.combatants .combatant .name {
+  font-weight: bolder;
+}
+.combatants .combatant.player {
+  background-color: #ddf;
+}
+.combatants .combatant.enemy {
+  background-color: #fdd;
+}
+
+.tile {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border: 1px solid black;
+}
+
+.tile.z-0 {
+  background-color: black;
+}
+
+.tile.z-1 {
+  background-color: #040;
+}
+
+.tile.z-2 {
+  background-color: #080;
+}
+
+.tile.z-3 {
+  background-color: #0d0;
+}
+
+.entity {
+  position: absolute;
+  height: 32px;
+  width: 32px;
+  opacity: 1;
+}
+
+.entity.player,
+.entity.enemy {
+  border-radius: 50%;
+  border: 3px solid transparent;
+  pointer-events: none;
+  opacity: 1;
+}
+
+.entity.player,
+.entity.enemy {
+  background-color: blue;
+  /* transition-property: left top;
+  transition-duration: 200ms; */
+}
+
+.entity.enemy {
+  background-color: red;
+}
+
+.entity .stats {
+  position: relative;
+  bottom: 45px;
+  left: -10px;
+  color: white;
+  /* background-color: rgba(0, 0, 0, .5); */
+  padding: 5px;
+  width: 75px;;
+  opacity: .7;
+}
+.entity .stats div {
+  white-space: nowrap;
+}
+.entity .stats div.name {
+  font-weight: bolder;
+}
+.entity .short-name {
+  position: relative;
+  top: 5px;
+  left: 9px;
+  color: white;
+  font-weight: bolder;
+}
+.entity.damage {
+  z-index: 10;
+}
+
+.entity.damage .value {
+  position: relative;
+  top: -45px;
+  left: -5px;
+  font-weight: bolder;
+  font-size: 25px;
+  color: red;
+}
+.entity.damage.pui-removing {
+  color: red;
+  font-weight: bolder;
+  animation: fade-out 2s forwards;
+}
+@keyframes fade-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    translate: 0px -50px;
+  }
+}
+
+
+.entity.player.current,
+.entity.enemy.current {
+  border: 3px solid gold;
+}
+
+.entity.path {
+  border-radius: 50%;
+  font-size: 11px;
+  padding: 6px;
+  background-color: gold;
+  width: 8px;
+  height: 8px;
+  transform: translate(10px, 10px);
+}
+
+.entity.path.unsafe {
+  background-color: orangered;
+}
+
+.entity.path-target,
+.entity.attack-target,
+.entity.shoot-target {
+  background-color: transparent;
+  border: 5px gold double;
+  pointer-events: none;
+}
+
+.entity.attack-target,
+.entity.shoot-target {
+  border-color: red;
+}
+
+.entity.path-target.unsafe {
+  border-color: lightgray;
+}
+
+.entity.attack-hit,
+.entity.shoot-hit {
+  background-color: red;
+}
+
+.dblclick {
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 0, 0, .5);
+}
